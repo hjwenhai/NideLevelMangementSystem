@@ -1,0 +1,6 @@
+import type {DisplaySettings,Metric} from './api';
+export type Quantity='level'|'temperature'|'density'|'volume'|'mass';
+export const qualityNames:Record<string,string>={Good:'正常',Missing:'无数据',Offline:'通讯中断',Expired:'数据过期',Fault:'故障',Unconfigured:'未配置'};
+export function unit(q:Quantity,d:DisplaySettings){return {level:{Millimetre:'mm',Centimetre:'cm',Metre:'m'}[d.heightUnit],temperature:'℃',density:d.densityUnit==='GramPerCubicCentimetre'?'g/cm³':'kg/m³',volume:d.volumeUnit==='Litre'?'L':'m³',mass:d.massUnit==='Kilogram'?'kg':'t'}[q]}
+export function converted(value:number,q:Quantity,d:DisplaySettings){return value*({level:{Millimetre:1,Centimetre:.1,Metre:.001}[d.heightUnit],temperature:1,density:d.densityUnit==='GramPerCubicCentimetre'?.001:1,volume:d.volumeUnit==='Litre'?1000:1,mass:d.massUnit==='Kilogram'?1000:1}[q])}
+export function displayMetric(m:Metric|undefined,q:Quantity,d:DisplaySettings){if(!m||m.quality!=='Good'||m.value===null)return '—';const decimals={level:d.heightUnit==='Metre'?4:d.heightUnit==='Centimetre'?2:1,temperature:2,density:d.densityUnit==='GramPerCubicCentimetre'?4:1,volume:d.volumeDecimals,mass:d.massDecimals}[q];return converted(m.value,q,d).toLocaleString('zh-CN',{minimumFractionDigits:decimals,maximumFractionDigits:decimals})}

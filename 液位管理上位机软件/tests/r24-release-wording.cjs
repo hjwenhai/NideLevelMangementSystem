@@ -1,0 +1,22 @@
+const fs=require('fs'),path=require('path'),net=require('net'),assert=require('assert/strict'),{spawn}=require('child_process');
+const {request,chromium}=require('C:/Program Files/WindowsApps/OpenAI.CodexPrimaryRuntime.v26-1117-835-0_26.1117.835.0_x64__3k8sg7r9htsxt/dependencies/node/node_modules/playwright');
+const root=path.resolve(__dirname,'..'),out=path.join(root,'output/r24-release-wording_20261118/qa');fs.mkdirSync(out,{recursive:true});
+const forbidden=/中文联调|联调测试|中文测试版|待现场验收|尚待现场验证|zh-test|调试版|验证版/;
+const pause=ms=>new Promise(r=>setTimeout(r,ms));let host,api,browser,page,csrf,url;const checks=[];
+async function call(route,method='GET',data){const response=await api.fetch(url+route,{method,data,headers:method==='GET'?{}:{'X-CSRF-TOKEN':csrf}});assert(response.ok(),route+' '+await response.text());return response.json()}
+(async()=>{
+ const probe=net.createServer();await new Promise(r=>probe.listen(0,'127.0.0.1',r));url='http://127.0.0.1:'+probe.address().port;await new Promise(r=>probe.close(r));
+ const log=fs.openSync(path.join(out,'host.log'),'a');host=spawn(path.join(root,'output/r24-feedback_20261118/payload/app/server/LevelManager.Host.exe'),['--data-root',path.join(out,'data-'+Date.now()),'--urls',url],{windowsHide:true,stdio:['ignore',log,log]});fs.closeSync(log);api=await request.newContext();
+ let health;for(let i=0;i<100;i++){try{health=await call('/api/health');break}catch{}await pause(100)}assert.equal(health.build,'20261118-r24');assert.equal(health.version,'0.3.0');assert.equal(health.stage,'正式发布');checks.push('正式版本信息0.3.0和正式发布状态');
+ browser=await chromium.launch({channel:'msedge',headless:true});page=await browser.newPage({viewport:{width:1704,height:990}});await page.goto(url);await page.getByRole('heading').first().waitFor();
+ // First-run administrator creation is a functional prompt, not a release-stage badge.
+ assert(!forbidden.test(await page.locator('body').innerText()));await page.screenshot({path:path.join(out,'首次使用.png')});checks.push('首次使用页面无研发阶段文字');
+ csrf=(await call('/api/session')).csrfToken;await call('/api/auth/setup','POST',{login:'releaseqa',password:'Release-Labels-2026!',displayName:'管理员'});await call('/api/auth/login','POST',{login:'releaseqa',password:'Release-Labels-2026!'});csrf=(await call('/api/session')).csrfToken;
+ await require('./support/license.cjs').importTestLicense(api,url,csrf,{expiresAtUtc:null,modules:[],branding:{softwareName:'智能伺服液位管理系统',manufacturerName:'耐德东京计装',manufacturerInformation:'液位管理系统'}});
+ await page.reload();await page.getByText('登录系统',{exact:true}).waitFor();assert(!forbidden.test(await page.locator('body').innerText()));await page.screenshot({path:path.join(out,'登录页.png')});checks.push('登录页显示登录系统及r24版本号');
+ const context=await browser.newContext({viewport:{width:1704,height:990},storageState:await api.storageState()});page=await context.newPage();await page.goto(url);await page.locator('aside').waitFor();assert.equal((await page.locator('.workspace-name').innerText()).trim(),'V0.3.0 · r24');assert(!forbidden.test(await page.locator('body').innerText()));await page.screenshot({path:path.join(out,'主界面.png')});checks.push('侧栏及主界面使用正式交付表述');
+ await page.locator('aside').getByRole('button',{name:'系统管理',exact:true}).click();await pause(300);assert(!forbidden.test(await page.locator('body').innerText()));await page.screenshot({path:path.join(out,'系统状态.png')});checks.push('系统状态去除尚待联调及验收表述');
+ const guide=fs.readFileSync(path.join(root,'output/客户安装向导_r24_20261118/r24修订与升级说明.html'),'utf8');assert(!forbidden.test(guide));assert(!/另行验证|仍需现场验收|没有实施前次仅讨论/.test(guide));checks.push('客户升级说明使用运行和升级指导表述');
+ assert(!fs.readFileSync(path.join(root,'output/r24-feedback_20261118/payload/app/server/LevelManager.Domain.dll')).includes(Buffer.from('本阶段','utf16le')));checks.push('压力输入限制提示使用协议能力表述');const config=await call('/api/config'),acq=await call('/api/acquisition');assert.equal(config.channels.length,0);assert.equal(acq.running,false);
+ fs.writeFileSync(path.join(out,'result.json'),JSON.stringify({passed:true,checks,realChannels:0,instrumentActions:0,liveR24DataTouched:false,url},null,2));console.log(JSON.stringify({passed:true,checks}));
+})().catch(async e=>{if(page)try{await page.screenshot({path:path.join(out,'failure.png')})}catch{}fs.writeFileSync(path.join(out,'failure.json'),JSON.stringify({error:String(e),stack:e.stack,checks},null,2));console.error(e);process.exitCode=1}).finally(async()=>{if(browser)await browser.close();if(api)await api.dispose();if(host&&host.exitCode===null)host.kill()});

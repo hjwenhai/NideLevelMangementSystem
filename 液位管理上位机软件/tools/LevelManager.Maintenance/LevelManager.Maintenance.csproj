@@ -1,0 +1,1 @@
+<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType></PropertyGroup><ItemGroup><ProjectReference Include="../../src/LevelManager.Infrastructure/LevelManager.Infrastructure.csproj"/><Compile Include="../LevelManager.Tools/RestoreCommand.cs" Link="RestoreCommand.cs"/></ItemGroup></Project>

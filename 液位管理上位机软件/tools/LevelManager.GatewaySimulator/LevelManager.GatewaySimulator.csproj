@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+ <PropertyGroup><TargetFramework>net10.0-windows</TargetFramework><UseWindowsForms>true</UseWindowsForms><OutputType>WinExe</OutputType><AssemblyName>LevelManager.GatewaySimulator</AssemblyName><ApplicationIcon>../../assets/level.ico</ApplicationIcon><Product>GT6757X本机模拟器</Product><AssemblyTitle>GT6757X本机模拟器</AssemblyTitle><Version>1.0.3</Version><AssemblyVersion>1.0.3.0</AssemblyVersion><FileVersion>1.0.3.0</FileVersion></PropertyGroup>
+ <ItemGroup><ProjectReference Include="../LevelManager.GatewaySimulator.Core/LevelManager.GatewaySimulator.Core.csproj"/></ItemGroup>
+</Project>

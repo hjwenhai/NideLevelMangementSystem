@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework><UseWindowsForms>true</UseWindowsForms><OutputType>WinExe</OutputType>
+    <ApplicationIcon>../../assets/level.ico</ApplicationIcon><AssemblyName>LevelManager.RestoreDesk</AssemblyName>
+    <Product>液位管理系统业务恢复工具</Product><AssemblyTitle>液位管理系统业务恢复工具</AssemblyTitle>
+  </PropertyGroup>
+  <ItemGroup><ProjectReference Include="../../src/LevelManager.Infrastructure/LevelManager.Infrastructure.csproj"/></ItemGroup>
+</Project>

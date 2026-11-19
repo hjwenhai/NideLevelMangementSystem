@@ -1,0 +1,3 @@
+#!/bin/sh
+# Install into /etc/init.d only after manual first-start validation.
+exec /home/level-gateway/current/deploy/service.sh "$@"

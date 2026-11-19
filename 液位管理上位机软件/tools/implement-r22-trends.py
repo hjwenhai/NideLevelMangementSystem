@@ -1,0 +1,37 @@
+from pathlib import Path
+r=Path(__file__).resolve().parents[1];p=r/'web/src/TrendBoard.vue';s=p.read_text(encoding='utf-8-sig')
+s=s.replace("import {minimumAxisBounds} from './trendAxis';","import {axisBounds,tankAxes,trendNames} from './trendSettings';")
+s=s.replace('type TrendPoint}', 'type TrendPoint,type TrendAxisSetting}')
+a=s.index('const names:Record<TrendQuantity,string>=');b=s.index('\nconst palette=',a);s=s[:a]+'const names=trendNames;'+s[b:]
+s=s.replace("const selected=ref<", "const currentTankId=ref(firstTank?.id||'');\nconst currentTank=computed(()=>props.config.tanks.find(t=>t.id===currentTankId.value));\nconst axes=ref(tankAxes(firstTank));\nconst selected=ref<",1)
+a=s.index('const levelSpan=');b=s.index('function quickRange',a)
+s=s[:a]+'''const activeQuantities=computed(()=>[...new Set(selected.value.map(s=>s.quantity))]);
+function chooseTank(){const t=currentTank.value;if(!t)return;selected.value=t.trends.quantities.map((quantity,i)=>({tankId:t.id,quantity,color:t.trends.colors[i]||palette[i]!}));axes.value=tankAxes(t);message.value='已载入该罐保存的曲线和纵轴设置。';void load(true)}
+function displayedAxis(quantity:TrendQuantity,key:'minimumSpan'|'minimum'|'maximum'){const n=axes.value[quantity][key];return n===null?'':value(n,quantity)}
+function setAxis(quantity:TrendQuantity,key:'minimumSpan'|'minimum'|'maximum',event:Event){const text=(event.target as HTMLInputElement).value;const n=text===''?null:Number(text)/value(1,quantity);if(key==='minimumSpan')axes.value[quantity].minimumSpan=n??0;else axes.value[quantity][key]=n;draw()}
+const axisErrors=computed(()=>activeQuantities.value.filter(q=>{const a=axes.value[q];return !Number.isFinite(a.minimumSpan)||a.minimumSpan<0||a.mode==='Fixed'&&(a.minimum===null||a.maximum===null||a.maximum<=a.minimum)}).map(q=>names[q]+'：跨度须非负，固定上限须大于下限'));
+const outsideFixed=computed(()=>activeQuantities.value.flatMap(q=>{const a=axes.value[q];if(a.mode!=='Fixed'||a.minimum===null||a.maximum===null||a.maximum<=a.minimum)return [];const points=data.value?.series.filter(s=>s.selection.quantity===q).flatMap(s=>s.points.filter(p=>p.quality==='Good'&&p.value!==null).map(p=>p.value!))||[];const outside=points.filter(v=>v<a.minimum!||v>a.maximum!);return outside.length?[names[q]+'有'+outside.length+'个点超出固定范围；实际最小/最大 '+value(Math.min(...points),q).toLocaleString()+' / '+value(Math.max(...points),q).toLocaleString()+' '+unitName(q)+'，请扩大范围查看']:[]}));
+''' +s[b:]
+a=s.index('function levelBounds(');b=s.index('function localInput',a);s=s[:a]+'''function quantityBounds(q:TrendQuantity,snapshot:TrendResult){const values=snapshot.series.filter(s=>s.selection.quantity===q).flatMap(s=>s.points.filter(p=>p.quality==='Good'&&p.value!==null).map(p=>value(p.value!,q)));return axisBounds(axes.value[q],values,value(1,q))}
+'''+s[b:]
+s=s.replace('units=[...new Set(snapshot.series.map(s=>unitName(s.selection.quantity)))]','units=[...new Set(snapshot.series.map(s=>s.selection.quantity))]')
+s=s.replace("yAxis:units.map((u,i)=>({type:'value',name:u,scale:true,...levelBounds(u,snapshot)","yAxis:units.map((u,i)=>({type:'value',name:names[u]+' '+unitName(u),scale:true,...quantityBounds(u,snapshot)")
+s=s.replace('yAxisIndex:units.indexOf(unitName(s.selection.quantity))','yAxisIndex:units.indexOf(s.selection.quantity)')
+a=s.index('function add(){');b=s.index('\nfunction remove',a)
+s=s[:a]+'''function add(){if(selected.value.length>=5||!currentTank.value)return;const used=new Set(selected.value.filter(s=>s.tankId===currentTankId.value).map(s=>s.quantity));const quantity=(Object.keys(names) as TrendQuantity[]).find(q=>!used.has(q));if(!quantity)return;selected.value.push({tankId:currentTankId.value,quantity,color:palette[selected.value.length]!});void load(true)}'''+s[b:]
+s=s.replace("if(!selected.value.length||!selected.value.every(s=>s.tankId===selected.value[0]!.tankId))", "if(axisErrors.value.length){error.value=axisErrors.value.join('；');return}if(!selected.value.length||!selected.value.every(s=>s.tankId===currentTankId.value))")
+s=s.replace("t.id===selected.value[0]!.tankId)!;tank.trends={quantities:selected.value.map(s=>s.quantity),colors:selected.value.map(s=>s.color)}", "t.id===currentTankId.value)!;tank.trends={quantities:selected.value.map(s=>s.quantity),colors:selected.value.map(s=>s.color),axes:JSON.parse(JSON.stringify(axes.value))}")
+s=s.replace('该罐曲线设置已保存，所有用户共用。','该罐曲线及各数据项纵轴设置已保存，所有用户共用。')
+s=s.replace('最多5条曲线，同单位共用刻度并自动调整范围。','最多5条曲线；每种数据项独立刻度，同一数据项跨罐对比共用刻度。切换当前储罐会载入其保存设置，新增曲线默认使用当前罐。')
+s=s.replace('<div class="toolbar"><label class="config-field">数据范围','<div class="toolbar"><label class="config-field">当前储罐<select v-model="currentTankId" aria-label="趋势当前储罐" @change="chooseTank"><option v-for="t in config.tanks" :key="t.id" :value="t.id">{{t.code}} · {{t.name||t.medium}}</option></select></label><label class="config-field">数据范围',1)
+a=s.index('<div class="toolbar"><label class="config-field">液位纵轴');b=s.index('<div v-for="(s,i) in selected"',a)
+s=s[:a]+'''<details class="trend-axis-settings" open><summary>各数据项纵轴设置</summary><div class="table-wrap"><table><thead><tr><th>数据项 / 单位</th><th>纵轴方式</th><th>最小跨度</th><th>固定下限</th><th>固定上限</th></tr></thead><tbody><tr v-for="q in activeQuantities" :key="q" :data-axis-quantity="q"><td>{{names[q]}} {{unitName(q)}}</td><td><select v-model="axes[q].mode" :aria-label="names[q]+'纵轴方式'" @change="draw()"><option value="Auto">自动（保留最小跨度）</option><option value="Fixed">固定上下限</option></select></td><td><input :value="displayedAxis(q,'minimumSpan')" :aria-label="names[q]+'最小跨度'" type="number" min="0" step="any" :disabled="axes[q].mode==='Fixed'" @input="setAxis(q,'minimumSpan',$event)"></td><td><input :value="displayedAxis(q,'minimum')" :aria-label="names[q]+'固定下限'" type="number" step="any" :disabled="axes[q].mode!=='Fixed'" @input="setAxis(q,'minimum',$event)"></td><td><input :value="displayedAxis(q,'maximum')" :aria-label="names[q]+'固定上限'" type="number" step="any" :disabled="axes[q].mode!=='Fixed'" @input="setAxis(q,'maximum',$event)"></td></tr></tbody></table></div><p class="help">刻度仅改变显示，原始值、极值及缺测状态保留。输入使用上方显示单位；保存后单罐实时趋势也采用该罐刻度。</p><p v-for="text in axisErrors" :key="text" class="error-message">{{text}}，暂按自动范围显示。</p></details>'''+s[b:]
+s=s.replace('<section class="panel"><div class="toolbar"><span>{{mode', '<section class="panel"><p v-for="text in outsideFixed" :key="text" class="notice error-message">{{text}}</p><div class="toolbar"><span>{{mode')
+s=s.replace("data.value.timeBasis,'打印当前图形", "data.value.timeBasis,...outsideFixed.value,'打印当前图形")
+p.write_text(s,encoding='utf-8')
+p=r/'web/src/TankRealtimeTrend.vue';s=p.read_text(encoding='utf-8-sig').replace("import {minimumAxisBounds} from './trendAxis';","import {axisBounds,tankAxes} from './trendSettings';")
+a=s.index('...(i===0?minimumAxisBounds(');b=s.index(',name:units[i]',a)
+s=s[:a]+"...axisBounds(tankAxes(props.config.tanks.find(t=>t.id===props.tankId))[quantities[i]!],latest!.series[i]?.points.filter(p=>p.quality==='Good'&&p.value!==null).map(p=>converted(p.value!,types[i]!,props.config.display))||[],converted(1,types[i]!,props.config.display))"+s[b:]
+s=s.replace("watch(()=>props.config.display,draw,{deep:true});","watch(()=>props.config.display,draw,{deep:true});watch(()=>props.config.tanks.find(t=>t.id===props.tankId)?.trends.axes,draw,{deep:true});")
+p.write_text(s,encoding='utf-8')
+print('Per-quantity persistent axes, current tank selection, same-tank add and detail trend reuse implemented')

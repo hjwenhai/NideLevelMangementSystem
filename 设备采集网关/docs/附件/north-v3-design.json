@@ -1,0 +1,509 @@
+{
+  "status": "implemented_in_0.4.3_board_validation_pending",
+  "document_version": "V3.1-D2",
+  "target_map_version": 3,
+  "current_software": "0.4.3",
+  "current_map_version": 3,
+  "capacity": 64,
+  "max_per_south_port": 16,
+  "addressing": "zero-based PDU",
+  "word_order": "most-significant-word-first",
+  "preserved_data_regions": [
+    {
+      "name": "device",
+      "base": 0,
+      "stride": 64,
+      "count": 1,
+      "access": "read"
+    },
+    {
+      "name": "ports",
+      "base": 100,
+      "stride": 32,
+      "count": 4,
+      "access": "read"
+    },
+    {
+      "name": "summary",
+      "base": 1000,
+      "stride": 24,
+      "count": 64,
+      "access": "read"
+    },
+    {
+      "name": "detail",
+      "base": 3000,
+      "stride": 144,
+      "count": 64,
+      "access": "read"
+    },
+    {
+      "name": "level_array",
+      "base": 14000,
+      "stride": 2,
+      "count": 64,
+      "access": "read"
+    },
+    {
+      "name": "temperature_array",
+      "base": 14200,
+      "stride": 1,
+      "count": 64,
+      "access": "read"
+    },
+    {
+      "name": "density_array",
+      "base": 14300,
+      "stride": 1,
+      "count": 64,
+      "access": "read"
+    },
+    {
+      "name": "average_density_array",
+      "base": 14400,
+      "stride": 1,
+      "count": 64,
+      "access": "read"
+    },
+    {
+      "name": "quality_array",
+      "base": 14500,
+      "stride": 1,
+      "count": 64,
+      "access": "read"
+    },
+    {
+      "name": "valid_array",
+      "base": 14600,
+      "stride": 1,
+      "count": 64,
+      "access": "read"
+    },
+    {
+      "name": "batch_measurements",
+      "base": 15000,
+      "stride": 3,
+      "count": 32,
+      "access": "read"
+    },
+    {
+      "name": "batch_status",
+      "base": 15100,
+      "stride": 3,
+      "count": 32,
+      "access": "read"
+    },
+    {
+      "name": "batch_measurements_extended",
+      "base": 15200,
+      "stride": 3,
+      "count": 32,
+      "access": "read"
+    },
+    {
+      "name": "batch_status_extended",
+      "base": 15300,
+      "stride": 3,
+      "count": 32,
+      "access": "read"
+    },
+    {
+      "name": "parameters",
+      "base": 20000,
+      "stride": 48,
+      "count": 64,
+      "access": "read"
+    },
+    {
+      "name": "level_target",
+      "base": 31000,
+      "stride": 4,
+      "count": 64,
+      "access": "holding",
+      "chinese": "远程液位修改目标，0/1目标SDWORD、2就绪标志、3保留"
+    }
+  ],
+  "preserved_summary_fields": [
+    {
+      "name": "quality",
+      "offset": 0,
+      "words": 1,
+      "type": "bits"
+    },
+    {
+      "name": "valid",
+      "offset": 1,
+      "words": 1,
+      "type": "bits"
+    },
+    {
+      "name": "sequence",
+      "offset": 2,
+      "words": 2,
+      "type": "uint32"
+    },
+    {
+      "name": "level",
+      "offset": 4,
+      "words": 2,
+      "type": "int32",
+      "unit": "0.1 mm"
+    },
+    {
+      "name": "average_temperature",
+      "offset": 6,
+      "words": 1,
+      "type": "int16",
+      "unit": "0.01 degC"
+    },
+    {
+      "name": "current_density",
+      "offset": 7,
+      "words": 1,
+      "type": "uint16",
+      "unit": "0.0001 g/cm3"
+    },
+    {
+      "name": "average_density",
+      "offset": 8,
+      "words": 1,
+      "type": "uint16",
+      "unit": "0.0001 g/cm3"
+    },
+    {
+      "name": "float_state",
+      "offset": 9,
+      "words": 1,
+      "type": "bits"
+    },
+    {
+      "name": "fault",
+      "offset": 10,
+      "words": 1,
+      "type": "bits"
+    },
+    {
+      "name": "level_rate",
+      "offset": 11,
+      "words": 1,
+      "type": "int16",
+      "unit": "cm/h"
+    },
+    {
+      "name": "last_complete_fast_ms",
+      "offset": 12,
+      "words": 4,
+      "type": "uint64"
+    },
+    {
+      "name": "oldest_fast_age_ms",
+      "offset": 16,
+      "words": 2,
+      "type": "uint32"
+    },
+    {
+      "name": "physical_port",
+      "offset": 18,
+      "words": 1,
+      "type": "uint16"
+    },
+    {
+      "name": "meter_address",
+      "offset": 19,
+      "words": 1,
+      "type": "uint16"
+    },
+    {
+      "name": "binding_version",
+      "offset": 20,
+      "words": 2,
+      "type": "uint32"
+    },
+    {
+      "name": "time_quality",
+      "offset": 22,
+      "words": 1,
+      "type": "bits"
+    },
+    {
+      "name": "reserved",
+      "offset": 23,
+      "words": 1,
+      "type": "uint16"
+    }
+  ],
+  "preserved_quality_bits": {
+    "initialized": 0,
+    "online": 1,
+    "stale": 2,
+    "instrument_fault": 3,
+    "disabled": 4,
+    "unsupported": 5,
+    "time_untrusted": 7,
+    "partial_fast": 8
+  },
+  "preserved_valid_bits": {
+    "level": 0,
+    "average_temperature": 1,
+    "current_density": 2,
+    "average_density": 3,
+    "float_state": 4,
+    "fault": 5,
+    "level_rate": 6
+  },
+  "device_extension_fields": [
+    {
+      "name": "simple_control_capabilities",
+      "offset": 28,
+      "words": 1,
+      "type": "bits",
+      "expected": 3,
+      "bits": {
+        "main_control": 0,
+        "independent_stop": 1
+      }
+    },
+    {
+      "name": "simple_control_stride",
+      "offset": 29,
+      "words": 1,
+      "type": "uint16",
+      "expected": 12
+    }
+  ],
+  "control_region": {
+    "name": "simple_control",
+    "base": 30000,
+    "stride": 12,
+    "count": 64,
+    "access": "holding",
+    "read_functions": [
+      3
+    ],
+    "write_functions": [
+      6,
+      16
+    ]
+  },
+  "control_fields": [
+    {
+      "name": "command",
+      "offset": 0,
+      "words": 1,
+      "type": "uint16",
+      "access": "RW",
+      "chinese": "动作指令，写非零合法编号立即受理，写0复位"
+    },
+    {
+      "name": "status",
+      "offset": 1,
+      "words": 1,
+      "type": "uint16",
+      "access": "R",
+      "chinese": "正常动作状态0～5"
+    },
+    {
+      "name": "error",
+      "offset": 2,
+      "words": 1,
+      "type": "uint16",
+      "access": "R",
+      "chinese": "正常动作错误码"
+    },
+    {
+      "name": "reserved",
+      "offset": 3,
+      "words": 1,
+      "type": "uint16",
+      "access": "R",
+      "chinese": "保留，返回0，不可写"
+    },
+    {
+      "name": "accepted_count",
+      "offset": 4,
+      "words": 2,
+      "type": "uint32",
+      "access": "R",
+      "chinese": "正常受理次数，饱和，仅诊断"
+    },
+    {
+      "name": "accepted_command",
+      "offset": 6,
+      "words": 1,
+      "type": "uint16",
+      "access": "R",
+      "chinese": "本周期已受理指令，仅诊断"
+    },
+    {
+      "name": "stop_request",
+      "offset": 7,
+      "words": 1,
+      "type": "uint16",
+      "access": "RW",
+      "chinese": "独立停止请求，1受理、0复位"
+    },
+    {
+      "name": "stop_status",
+      "offset": 8,
+      "words": 1,
+      "type": "uint16",
+      "access": "R",
+      "chinese": "独立停止状态0～5"
+    },
+    {
+      "name": "stop_error",
+      "offset": 9,
+      "words": 1,
+      "type": "uint16",
+      "access": "R",
+      "chinese": "独立停止错误码"
+    },
+    {
+      "name": "stop_accepted_count",
+      "offset": 10,
+      "words": 2,
+      "type": "uint32",
+      "access": "R",
+      "chinese": "停止受理次数，饱和，仅诊断"
+    }
+  ],
+  "commands": [
+    {
+      "value": 1,
+      "chinese": "测量Ⅰ",
+      "south_HR699": 1
+    },
+    {
+      "value": 2,
+      "chinese": "测量Ⅱ（界面）",
+      "south_HR699": 16
+    },
+    {
+      "value": 3,
+      "chinese": "测量Ⅲ（罐底）",
+      "south_HR699": 32
+    },
+    {
+      "value": 4,
+      "chinese": "停止",
+      "south_HR699": 4
+    },
+    {
+      "value": 5,
+      "chinese": "上升",
+      "south_HR699": 2
+    },
+    {
+      "value": 6,
+      "chinese": "下降",
+      "south_HR699": 256
+    },
+    {
+      "value": 7,
+      "chinese": "远程密度",
+      "south_HR699": 64
+    },
+    {
+      "value": 9,
+      "chinese": "重复性检查",
+      "south_HR699": 8
+    },
+    {
+      "value": 10,
+      "chinese": "液体震荡回避",
+      "south_HR699": 128
+    }
+  ],
+  "reserved_commands": [
+    8
+  ],
+  "states": {
+    "idle": 0,
+    "accepted": 1,
+    "running": 2,
+    "readback_confirmed": 3,
+    "failed_or_canceled": 4,
+    "uncertain": 5
+  },
+  "errors": {
+    "none": 0,
+    "binding_changed_unsent": 1,
+    "legacy_not_remote_unsent": 2,
+    "legacy_instrument_fault_unsent": 3,
+    "auth_failed_unsent": 4,
+    "instrument_rejected": 5,
+    "write_unconfirmed": 6,
+    "readback_unconfirmed": 7,
+    "audit_state_unreliable": 8,
+    "interrupted": 9,
+    "conditions_revoked_unsent": 10,
+    "canceled_by_stop_unsent": 11,
+    "level_offset_out_of_range": 12,
+    "level_offset_readback_mismatch": 13,
+    "level_password_clear_unconfirmed": 14
+  },
+  "single_write_offsets": [
+    0,
+    7
+  ],
+  "fc10_shapes": [
+    {
+      "offset": 0,
+      "count": 1,
+      "meaning": "submit_command_or_reset"
+    },
+    {
+      "offset": 7,
+      "count": 1,
+      "meaning": "independent_stop_or_reset"
+    }
+  ],
+  "legacy_mailboxes": {
+    "base": 40000,
+    "stride": 128,
+    "count": 8,
+    "north_write_in_v3": false,
+    "current_v2_write_unchanged": false
+  },
+  "customer_sequence_required": false,
+  "one_controller_per_instrument": true,
+  "restart_unfinished_state": 5,
+  "restart_unfinished_error": 9,
+  "customer_reset_allowed_states": [
+    0,
+    3,
+    4,
+    5
+  ],
+  "at_most_once_scope": "one persisted latch cycle; no unconditional cross-cycle duplicate recognition",
+  "requirements_version": "V0.8",
+  "control_style": "single command write submits immediately; zero resets an allowed terminal cycle",
+  "normal_reset_value": 0,
+  "customer_command_register_required": true,
+  "customer_trigger_register_required": false,
+  "restart_preserves_command": true,
+  "staging_supported": false,
+  "draft_compatibility": "D2 supersedes unpublished/unimplemented D1; D1 trigger and two-word writes are invalid",
+  "command_confirmation": "客户C01 2026-10-13，二进制001至111对应十进制1至7；9/10为FW扩展",
+  "customer_manual_confirmation_required_states": [
+    5
+  ],
+  "automatic_uncertain_reset_allowed": false,
+  "automatic_action_replay_allowed": false,
+  "reset_audit_fields": [
+    "source",
+    "reset_time_ms",
+    "stop",
+    "before",
+    "after"
+  ],
+  "revision": "V3.1-D2",
+  "gateway_commands": [
+    {
+      "value": 11,
+      "chinese": "远程液位修改",
+      "permission": 512,
+      "method": "FC06 HR129=EA66; FC10 HR503/504=new offset; FC06 HR129=0"
+    }
+  ]
+}

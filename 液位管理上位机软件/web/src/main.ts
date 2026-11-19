@@ -1,0 +1,10 @@
+import { createApp } from 'vue';
+import {createPinia} from 'pinia';
+import {createRouter,createWebHashHistory} from 'vue-router';
+import App from './App.vue';
+import './theme.css';
+import './engineering.css';
+import './workspace-ui.css';
+import './customer-r24.css';
+const router=createRouter({history:createWebHashHistory(),routes:[{path:'/:view?',component:{render:()=>null}}]});
+createApp(App).use(createPinia()).use(router).mount('#app');

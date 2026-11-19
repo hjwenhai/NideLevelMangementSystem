@@ -1,0 +1,890 @@
+{
+  "version": 2,
+  "addressing": "zero-based PDU",
+  "word_order": "most-significant-word-first",
+  "capacity": 32,
+  "regions": [
+    {
+      "name": "device",
+      "base": 0,
+      "stride": 64,
+      "count": 1,
+      "access": "read"
+    },
+    {
+      "name": "ports",
+      "base": 100,
+      "stride": 32,
+      "count": 4,
+      "access": "read"
+    },
+    {
+      "name": "summary",
+      "base": 1000,
+      "stride": 24,
+      "count": 32,
+      "access": "read"
+    },
+    {
+      "name": "detail",
+      "base": 3000,
+      "stride": 144,
+      "count": 32,
+      "access": "read"
+    },
+    {
+      "name": "level_array",
+      "base": 14000,
+      "stride": 2,
+      "count": 32,
+      "access": "read"
+    },
+    {
+      "name": "temperature_array",
+      "base": 14200,
+      "stride": 1,
+      "count": 32,
+      "access": "read"
+    },
+    {
+      "name": "density_array",
+      "base": 14300,
+      "stride": 1,
+      "count": 32,
+      "access": "read"
+    },
+    {
+      "name": "average_density_array",
+      "base": 14400,
+      "stride": 1,
+      "count": 32,
+      "access": "read"
+    },
+    {
+      "name": "quality_array",
+      "base": 14500,
+      "stride": 1,
+      "count": 32,
+      "access": "read"
+    },
+    {
+      "name": "valid_array",
+      "base": 14600,
+      "stride": 1,
+      "count": 32,
+      "access": "read"
+    },
+    {
+      "name": "parameters",
+      "base": 20000,
+      "stride": 48,
+      "count": 32,
+      "access": "read"
+    },
+    {
+      "name": "mailboxes",
+      "base": 40000,
+      "stride": 128,
+      "count": 8,
+      "access": "command"
+    },
+    {
+      "name": "batch_measurements",
+      "base": 15000,
+      "stride": 3,
+      "count": 32,
+      "access": "read"
+    },
+    {
+      "name": "batch_status",
+      "base": 15100,
+      "stride": 3,
+      "count": 32,
+      "access": "read"
+    }
+  ],
+  "summary_fields": [
+    {
+      "name": "quality",
+      "offset": 0,
+      "words": 1,
+      "type": "bits"
+    },
+    {
+      "name": "valid",
+      "offset": 1,
+      "words": 1,
+      "type": "bits"
+    },
+    {
+      "name": "sequence",
+      "offset": 2,
+      "words": 2,
+      "type": "uint32"
+    },
+    {
+      "name": "level",
+      "offset": 4,
+      "words": 2,
+      "type": "int32",
+      "unit": "0.1 mm"
+    },
+    {
+      "name": "average_temperature",
+      "offset": 6,
+      "words": 1,
+      "type": "int16",
+      "unit": "0.01 degC"
+    },
+    {
+      "name": "current_density",
+      "offset": 7,
+      "words": 1,
+      "type": "uint16",
+      "unit": "0.0001 g/cm3"
+    },
+    {
+      "name": "average_density",
+      "offset": 8,
+      "words": 1,
+      "type": "uint16",
+      "unit": "0.0001 g/cm3"
+    },
+    {
+      "name": "float_state",
+      "offset": 9,
+      "words": 1,
+      "type": "bits"
+    },
+    {
+      "name": "fault",
+      "offset": 10,
+      "words": 1,
+      "type": "bits"
+    },
+    {
+      "name": "level_rate",
+      "offset": 11,
+      "words": 1,
+      "type": "int16",
+      "unit": "cm/h"
+    },
+    {
+      "name": "last_complete_fast_ms",
+      "offset": 12,
+      "words": 4,
+      "type": "uint64"
+    },
+    {
+      "name": "oldest_fast_age_ms",
+      "offset": 16,
+      "words": 2,
+      "type": "uint32"
+    },
+    {
+      "name": "physical_port",
+      "offset": 18,
+      "words": 1,
+      "type": "uint16"
+    },
+    {
+      "name": "meter_address",
+      "offset": 19,
+      "words": 1,
+      "type": "uint16"
+    },
+    {
+      "name": "binding_version",
+      "offset": 20,
+      "words": 2,
+      "type": "uint32"
+    },
+    {
+      "name": "time_quality",
+      "offset": 22,
+      "words": 1,
+      "type": "bits"
+    },
+    {
+      "name": "reserved",
+      "offset": 23,
+      "words": 1,
+      "type": "uint16"
+    }
+  ],
+  "quality_bits": {
+    "initialized": 0,
+    "online": 1,
+    "stale": 2,
+    "instrument_fault": 3,
+    "disabled": 4,
+    "unsupported": 5,
+    "time_untrusted": 7,
+    "partial_fast": 8
+  },
+  "valid_bits": {
+    "level": 0,
+    "average_temperature": 1,
+    "current_density": 2,
+    "average_density": 3,
+    "float_state": 4,
+    "fault": 5,
+    "level_rate": 6
+  },
+  "command": {
+    "request_words": 64,
+    "result_words": 64,
+    "commit": 42330,
+    "actions": [
+      1,
+      2,
+      4,
+      8,
+      16,
+      32,
+      64,
+      128,
+      256
+    ]
+  },
+  "groups": [
+    {
+      "name": "level",
+      "start": 0,
+      "words": 6
+    },
+    {
+      "name": "temperature_status",
+      "start": 22,
+      "words": 5
+    },
+    {
+      "name": "density_status",
+      "start": 49,
+      "words": 4
+    },
+    {
+      "name": "temperatures",
+      "start": 6,
+      "words": 16
+    },
+    {
+      "name": "densities",
+      "start": 33,
+      "words": 16
+    },
+    {
+      "name": "analog",
+      "start": 27,
+      "words": 4
+    }
+  ],
+  "device_fields": [
+    {
+      "name": "software_major",
+      "offset": 0,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "software_minor",
+      "offset": 1,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "map_version",
+      "offset": 2,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "capacity",
+      "offset": 3,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "bound_slots",
+      "offset": 4,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "enabled_slots",
+      "offset": 5,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "boot_id",
+      "offset": 6,
+      "words": 4,
+      "type": "uint64",
+      "unit": ""
+    },
+    {
+      "name": "utc_ms",
+      "offset": 10,
+      "words": 4,
+      "type": "uint64",
+      "unit": ""
+    },
+    {
+      "name": "config_revision",
+      "offset": 14,
+      "words": 2,
+      "type": "uint32",
+      "unit": ""
+    },
+    {
+      "name": "uptime_sec",
+      "offset": 16,
+      "words": 2,
+      "type": "uint32",
+      "unit": ""
+    },
+    {
+      "name": "clock_trusted",
+      "offset": 18,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "simulate",
+      "offset": 19,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "storage_error",
+      "offset": 20,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "tcp_enabled",
+      "offset": 21,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "sys1_mode",
+      "offset": 22,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "sys2_mode",
+      "offset": 23,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "sys3_mode",
+      "offset": 24,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "led_driver_enabled",
+      "offset": 25,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "led_driver_error",
+      "offset": 26,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "max_per_south_port",
+      "offset": 27,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "reserved",
+      "offset": 28,
+      "words": 36,
+      "type": "uint16",
+      "unit": ""
+    }
+  ],
+  "port_fields": [
+    {
+      "name": "physical_port",
+      "offset": 0,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "role_0_disabled_1_south_2_north",
+      "offset": 1,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "baud",
+      "offset": 2,
+      "words": 2,
+      "type": "uint32",
+      "unit": ""
+    },
+    {
+      "name": "parity_ascii",
+      "offset": 4,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "stop_bits",
+      "offset": 5,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "unit_id",
+      "offset": 6,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "enabled_meters",
+      "offset": 7,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "transactions",
+      "offset": 8,
+      "words": 2,
+      "type": "uint32",
+      "unit": ""
+    },
+    {
+      "name": "failures",
+      "offset": 10,
+      "words": 2,
+      "type": "uint32",
+      "unit": ""
+    },
+    {
+      "name": "cycle_ms",
+      "offset": 12,
+      "words": 2,
+      "type": "uint32",
+      "unit": ""
+    },
+    {
+      "name": "queue_depth",
+      "offset": 14,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "channel_error",
+      "offset": 15,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "reserved",
+      "offset": 16,
+      "words": 16,
+      "type": "uint16",
+      "unit": ""
+    }
+  ],
+  "detail_fields": [
+    {
+      "name": "raw_IR0_52",
+      "offset": 0,
+      "words": 53,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "reserved",
+      "offset": 53,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "binding_version",
+      "offset": 54,
+      "words": 2,
+      "type": "uint32",
+      "unit": ""
+    },
+    {
+      "name": "sequence",
+      "offset": 56,
+      "words": 2,
+      "type": "uint32",
+      "unit": ""
+    },
+    {
+      "name": "known_bitmap_IR0_bit15",
+      "offset": 58,
+      "words": 4,
+      "type": "bits",
+      "unit": ""
+    },
+    {
+      "name": "reserved2",
+      "offset": 62,
+      "words": 2,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "group_metadata_6x12",
+      "offset": 64,
+      "words": 72,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "reserved3",
+      "offset": 136,
+      "words": 8,
+      "type": "uint16",
+      "unit": ""
+    }
+  ],
+  "group_metadata_fields": [
+    {
+      "name": "status_bits_read_error_unsupported_timeTrusted",
+      "offset": 0,
+      "words": 1,
+      "type": "bits",
+      "unit": ""
+    },
+    {
+      "name": "failure_count_saturating",
+      "offset": 1,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "sequence",
+      "offset": 2,
+      "words": 2,
+      "type": "uint32",
+      "unit": ""
+    },
+    {
+      "name": "utc_ms",
+      "offset": 4,
+      "words": 4,
+      "type": "uint64",
+      "unit": ""
+    },
+    {
+      "name": "monotonic_age_ms",
+      "offset": 8,
+      "words": 2,
+      "type": "uint32",
+      "unit": ""
+    },
+    {
+      "name": "source_count",
+      "offset": 10,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "source_start",
+      "offset": 11,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    }
+  ],
+  "parameter_fields": [
+    {
+      "name": "HR0",
+      "offset": 0,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "HR130_132",
+      "offset": 1,
+      "words": 3,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "HR3300_3337",
+      "offset": 4,
+      "words": 38,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "snapshot_utc_ms",
+      "offset": 42,
+      "words": 4,
+      "type": "uint64",
+      "unit": ""
+    },
+    {
+      "name": "snapshot_valid",
+      "offset": 46,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "snapshot_error",
+      "offset": 47,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    }
+  ],
+  "command_fields": [
+    {
+      "name": "version_2",
+      "offset": 0,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "boot_id",
+      "offset": 1,
+      "words": 4,
+      "type": "uint64",
+      "unit": ""
+    },
+    {
+      "name": "client_id_mailbox_plus_1",
+      "offset": 5,
+      "words": 2,
+      "type": "uint32",
+      "unit": ""
+    },
+    {
+      "name": "sequence_nonzero",
+      "offset": 7,
+      "words": 2,
+      "type": "uint32",
+      "unit": ""
+    },
+    {
+      "name": "slot",
+      "offset": 9,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "binding_version",
+      "offset": 10,
+      "words": 2,
+      "type": "uint32",
+      "unit": ""
+    },
+    {
+      "name": "kind_1_action",
+      "offset": 12,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "south_address_699",
+      "offset": 13,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "payload_count",
+      "offset": 14,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "payload_and_zero_padding",
+      "offset": 15,
+      "words": 32,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "reserved_zero",
+      "offset": 47,
+      "words": 16,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "commit_0xA55A",
+      "offset": 63,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    }
+  ],
+  "command_result_fields": [
+    {
+      "name": "state",
+      "offset": 0,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "error_present_0_or_1",
+      "offset": 1,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "client_id",
+      "offset": 2,
+      "words": 2,
+      "type": "uint32",
+      "unit": ""
+    },
+    {
+      "name": "sequence",
+      "offset": 4,
+      "words": 2,
+      "type": "uint32",
+      "unit": ""
+    },
+    {
+      "name": "slot",
+      "offset": 6,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "binding_version",
+      "offset": 7,
+      "words": 2,
+      "type": "uint32",
+      "unit": ""
+    },
+    {
+      "name": "accepted_utc_ms",
+      "offset": 9,
+      "words": 4,
+      "type": "uint64",
+      "unit": ""
+    },
+    {
+      "name": "updated_utc_ms",
+      "offset": 13,
+      "words": 4,
+      "type": "uint64",
+      "unit": ""
+    },
+    {
+      "name": "readback_count",
+      "offset": 17,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "readback_HR698_IR51_IR52",
+      "offset": 18,
+      "words": 3,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "reserved",
+      "offset": 21,
+      "words": 43,
+      "type": "uint16",
+      "unit": ""
+    }
+  ],
+  "command_states": {
+    "idle": 0,
+    "accepted": 1,
+    "running": 2,
+    "write_acknowledged": 3,
+    "readback_confirmed": 4,
+    "failed": 5,
+    "uncertain": 6,
+    "canceled": 7
+  },
+  "max_per_south_port": 8,
+  "batch_measurement_fields": [
+    {
+      "name": "level",
+      "offset": 0,
+      "words": 2,
+      "type": "int32",
+      "unit": "0.1 mm"
+    },
+    {
+      "name": "average_temperature",
+      "offset": 2,
+      "words": 1,
+      "type": "int16",
+      "unit": "0.01 C"
+    }
+  ],
+  "batch_status_fields": [
+    {
+      "name": "current_density",
+      "offset": 0,
+      "words": 1,
+      "type": "uint16",
+      "unit": "0.0001 g/cm3"
+    },
+    {
+      "name": "quality",
+      "offset": 1,
+      "words": 1,
+      "type": "bits"
+    },
+    {
+      "name": "valid",
+      "offset": 2,
+      "words": 1,
+      "type": "bits"
+    }
+  ]
+}

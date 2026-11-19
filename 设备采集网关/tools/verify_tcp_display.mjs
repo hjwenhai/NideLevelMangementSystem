@@ -1,0 +1,22 @@
+import assert from 'node:assert/strict';
+import {readFile,writeFile} from 'node:fs/promises';
+const file=new URL('../src/internal/web/static/tcp-access.js',import.meta.url);
+const content=await readFile(file,'utf8');
+const {splitTCP,withTCPPort,importedTCP,describeTCP}=await import('data:text/javascript;base64,'+Buffer.from(content).toString('base64'));
+const net={actual:[{name:'eth0',ip:'192.168.1.230'},{name:'eth1',ip:'192.168.0.230'}],settings:{interfaces:[{name:'eth0',ip:'192.168.1.230'},{name:'eth1',ip:'192.168.0.230'}]}};
+const checks=[];function check(name,fn){fn();checks.push(name)}
+check('single_port_read_only_address',()=>{const v=describeTCP({listen:'192.168.0.230:502',enabled:true},net);assert.equal(v.selected,'网口2（eth1）');assert.equal(v.copy,'192.168.0.230:502')});
+check('both_real_addresses_not_wildcard',()=>{const v=describeTCP({listen:'0.0.0.0:1502',enabled:true},net);assert.equal(v.copy,'192.168.1.230:1502\n192.168.0.230:1502');assert.equal(v.selected,'两个网口')});
+check('port_edit_preserves_host',()=>assert.equal(withTCPPort('192.168.0.230:502',1502),'192.168.0.230:1502'));
+check('both_port_edit_preserves_wildcard',()=>assert.equal(withTCPPort('0.0.0.0:502',1502),'0.0.0.0:1502'));
+check('configuration_import_cannot_replace_current_IP',()=>assert.equal(importedTCP('192.168.0.230:502','10.9.9.9:1502'),'192.168.0.230:1502'));
+check('configuration_import_cannot_change_interface_mode',()=>assert.equal(importedTCP('0.0.0.0:502','10.9.9.9:1502'),'0.0.0.0:1502'));
+check('port_boundaries',()=>{assert.equal(splitTCP('127.0.0.1:1').port,1);assert.equal(withTCPPort('127.0.0.1:502',65535),'127.0.0.1:65535')});
+check('invalid_ports_rejected',()=>{for(const v of [0,-1,65536,1.5,NaN,Infinity])assert.throws(()=>withTCPPort('192.168.0.230:502',v));assert.throws(()=>splitTCP('192.168.0.230:0'))});
+check('disabled_service_is_explicit',()=>assert.match(describeTCP({listen:'192.168.0.230:502',enabled:false},net).state,/未启用/));
+check('license_gate_is_explicit',()=>assert.match(describeTCP({listen:'192.168.0.230:502',enabled:true},net,false).state,/授权未生效/));
+check('unknown_addresses_do_not_copy_wildcard',()=>{const v=describeTCP({listen:'0.0.0.0:502',enabled:true});assert.equal(v.copy,'');assert.match(v.warning,/未取得网口地址/)});
+check('saved_fallback_is_labelled',()=>{const v=describeTCP({listen:'0.0.0.0:502',enabled:true},{settings:net.settings});assert.match(v.warning,/保存配置/);assert.equal(v.rows.length,2)});
+check('IPv6_and_empty_host_preserved',()=>{assert.equal(withTCPPort('[::1]:502',1502),'[::1]:1502');assert.equal(withTCPPort(':502',1502),':1502')});
+const report={date:'2026-11-09',software:'0.8.1',passed:true,checks};
+await writeFile(new URL('../tests/tcp-display-0.8.1-20261109.json',import.meta.url),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify({passed:true,checks:checks.length}));

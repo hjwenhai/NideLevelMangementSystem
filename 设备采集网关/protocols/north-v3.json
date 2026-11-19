@@ -1,0 +1,903 @@
+{
+  "version": 3,
+  "addressing": "zero-based PDU",
+  "word_order": "most-significant-word-first",
+  "capacity": 64,
+  "regions": [
+    {
+      "name": "device",
+      "base": 0,
+      "stride": 64,
+      "count": 1,
+      "access": "read"
+    },
+    {
+      "name": "ports",
+      "base": 100,
+      "stride": 32,
+      "count": 4,
+      "access": "read"
+    },
+    {
+      "name": "summary",
+      "base": 1000,
+      "stride": 24,
+      "count": 64,
+      "access": "read"
+    },
+    {
+      "name": "detail",
+      "base": 3000,
+      "stride": 144,
+      "count": 64,
+      "access": "read"
+    },
+    {
+      "name": "level_array",
+      "base": 14000,
+      "stride": 2,
+      "count": 64,
+      "access": "read"
+    },
+    {
+      "name": "temperature_array",
+      "base": 14200,
+      "stride": 1,
+      "count": 64,
+      "access": "read"
+    },
+    {
+      "name": "density_array",
+      "base": 14300,
+      "stride": 1,
+      "count": 64,
+      "access": "read"
+    },
+    {
+      "name": "average_density_array",
+      "base": 14400,
+      "stride": 1,
+      "count": 64,
+      "access": "read"
+    },
+    {
+      "name": "quality_array",
+      "base": 14500,
+      "stride": 1,
+      "count": 64,
+      "access": "read"
+    },
+    {
+      "name": "valid_array",
+      "base": 14600,
+      "stride": 1,
+      "count": 64,
+      "access": "read"
+    },
+    {
+      "name": "batch_measurements",
+      "base": 15000,
+      "stride": 3,
+      "count": 32,
+      "access": "read"
+    },
+    {
+      "name": "batch_status",
+      "base": 15100,
+      "stride": 3,
+      "count": 32,
+      "access": "read"
+    },
+    {
+      "name": "batch_measurements_extended",
+      "base": 15200,
+      "stride": 3,
+      "count": 32,
+      "access": "read"
+    },
+    {
+      "name": "batch_status_extended",
+      "base": 15300,
+      "stride": 3,
+      "count": 32,
+      "access": "read"
+    },
+    {
+      "name": "parameters",
+      "base": 20000,
+      "stride": 48,
+      "count": 64,
+      "access": "read"
+    },
+    {
+      "name": "simple_control",
+      "base": 30000,
+      "stride": 12,
+      "count": 64,
+      "access": "holding",
+      "read_functions": [
+        3
+      ],
+      "write_functions": [
+        6,
+        16
+      ]
+    },
+    {
+      "name": "level_target",
+      "base": 31000,
+      "stride": 4,
+      "count": 64,
+      "access": "holding",
+      "chinese": "远程液位修改目标，0/1目标SDWORD、2就绪标志、3保留"
+    }
+  ],
+  "summary_fields": [
+    {
+      "name": "quality",
+      "offset": 0,
+      "words": 1,
+      "type": "bits"
+    },
+    {
+      "name": "valid",
+      "offset": 1,
+      "words": 1,
+      "type": "bits"
+    },
+    {
+      "name": "sequence",
+      "offset": 2,
+      "words": 2,
+      "type": "uint32"
+    },
+    {
+      "name": "level",
+      "offset": 4,
+      "words": 2,
+      "type": "int32",
+      "unit": "0.1 mm"
+    },
+    {
+      "name": "average_temperature",
+      "offset": 6,
+      "words": 1,
+      "type": "int16",
+      "unit": "0.01 degC"
+    },
+    {
+      "name": "current_density",
+      "offset": 7,
+      "words": 1,
+      "type": "uint16",
+      "unit": "0.0001 g/cm3"
+    },
+    {
+      "name": "average_density",
+      "offset": 8,
+      "words": 1,
+      "type": "uint16",
+      "unit": "0.0001 g/cm3"
+    },
+    {
+      "name": "float_state",
+      "offset": 9,
+      "words": 1,
+      "type": "bits"
+    },
+    {
+      "name": "fault",
+      "offset": 10,
+      "words": 1,
+      "type": "bits"
+    },
+    {
+      "name": "level_rate",
+      "offset": 11,
+      "words": 1,
+      "type": "int16",
+      "unit": "cm/h"
+    },
+    {
+      "name": "last_complete_fast_ms",
+      "offset": 12,
+      "words": 4,
+      "type": "uint64"
+    },
+    {
+      "name": "oldest_fast_age_ms",
+      "offset": 16,
+      "words": 2,
+      "type": "uint32"
+    },
+    {
+      "name": "physical_port",
+      "offset": 18,
+      "words": 1,
+      "type": "uint16"
+    },
+    {
+      "name": "meter_address",
+      "offset": 19,
+      "words": 1,
+      "type": "uint16"
+    },
+    {
+      "name": "binding_version",
+      "offset": 20,
+      "words": 2,
+      "type": "uint32"
+    },
+    {
+      "name": "time_quality",
+      "offset": 22,
+      "words": 1,
+      "type": "bits"
+    },
+    {
+      "name": "reserved",
+      "offset": 23,
+      "words": 1,
+      "type": "uint16"
+    }
+  ],
+  "quality_bits": {
+    "initialized": 0,
+    "online": 1,
+    "stale": 2,
+    "instrument_fault": 3,
+    "disabled": 4,
+    "unsupported": 5,
+    "time_untrusted": 7,
+    "partial_fast": 8
+  },
+  "valid_bits": {
+    "level": 0,
+    "average_temperature": 1,
+    "current_density": 2,
+    "average_density": 3,
+    "float_state": 4,
+    "fault": 5,
+    "level_rate": 6
+  },
+  "groups": [
+    {
+      "name": "level",
+      "start": 0,
+      "words": 6
+    },
+    {
+      "name": "temperature_status",
+      "start": 22,
+      "words": 5
+    },
+    {
+      "name": "density_status",
+      "start": 49,
+      "words": 4
+    },
+    {
+      "name": "temperatures",
+      "start": 6,
+      "words": 16
+    },
+    {
+      "name": "densities",
+      "start": 33,
+      "words": 16
+    },
+    {
+      "name": "analog",
+      "start": 27,
+      "words": 4
+    }
+  ],
+  "device_fields": [
+    {
+      "name": "software_major",
+      "offset": 0,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "software_minor",
+      "offset": 1,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "map_version",
+      "offset": 2,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "capacity",
+      "offset": 3,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "bound_slots",
+      "offset": 4,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "enabled_slots",
+      "offset": 5,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "boot_id",
+      "offset": 6,
+      "words": 4,
+      "type": "uint64",
+      "unit": ""
+    },
+    {
+      "name": "utc_ms",
+      "offset": 10,
+      "words": 4,
+      "type": "uint64",
+      "unit": ""
+    },
+    {
+      "name": "config_revision",
+      "offset": 14,
+      "words": 2,
+      "type": "uint32",
+      "unit": ""
+    },
+    {
+      "name": "uptime_sec",
+      "offset": 16,
+      "words": 2,
+      "type": "uint32",
+      "unit": ""
+    },
+    {
+      "name": "clock_trusted",
+      "offset": 18,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "simulate",
+      "offset": 19,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "storage_error",
+      "offset": 20,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "tcp_enabled",
+      "offset": 21,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "sys1_mode",
+      "offset": 22,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "sys2_mode",
+      "offset": 23,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "sys3_mode",
+      "offset": 24,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "led_driver_enabled",
+      "offset": 25,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "led_driver_error",
+      "offset": 26,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "max_per_south_port",
+      "offset": 27,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "simple_control_capabilities",
+      "offset": 28,
+      "words": 1,
+      "type": "bits"
+    },
+    {
+      "name": "simple_control_stride",
+      "offset": 29,
+      "words": 1,
+      "type": "uint16"
+    },
+    {
+      "name": "reserved",
+      "offset": 30,
+      "words": 34,
+      "type": "uint16"
+    }
+  ],
+  "port_fields": [
+    {
+      "name": "physical_port",
+      "offset": 0,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "role_0_disabled_1_south_2_north",
+      "offset": 1,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "baud",
+      "offset": 2,
+      "words": 2,
+      "type": "uint32",
+      "unit": ""
+    },
+    {
+      "name": "parity_ascii",
+      "offset": 4,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "stop_bits",
+      "offset": 5,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "unit_id",
+      "offset": 6,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "enabled_meters",
+      "offset": 7,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "transactions",
+      "offset": 8,
+      "words": 2,
+      "type": "uint32",
+      "unit": ""
+    },
+    {
+      "name": "failures",
+      "offset": 10,
+      "words": 2,
+      "type": "uint32",
+      "unit": ""
+    },
+    {
+      "name": "cycle_ms",
+      "offset": 12,
+      "words": 2,
+      "type": "uint32",
+      "unit": ""
+    },
+    {
+      "name": "queue_depth",
+      "offset": 14,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "channel_error",
+      "offset": 15,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "reserved",
+      "offset": 16,
+      "words": 16,
+      "type": "uint16",
+      "unit": ""
+    }
+  ],
+  "detail_fields": [
+    {
+      "name": "raw_IR0_52",
+      "offset": 0,
+      "words": 53,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "reserved",
+      "offset": 53,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "binding_version",
+      "offset": 54,
+      "words": 2,
+      "type": "uint32",
+      "unit": ""
+    },
+    {
+      "name": "sequence",
+      "offset": 56,
+      "words": 2,
+      "type": "uint32",
+      "unit": ""
+    },
+    {
+      "name": "known_bitmap_IR0_bit15",
+      "offset": 58,
+      "words": 4,
+      "type": "bits",
+      "unit": ""
+    },
+    {
+      "name": "reserved2",
+      "offset": 62,
+      "words": 2,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "group_metadata_6x12",
+      "offset": 64,
+      "words": 72,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "reserved3",
+      "offset": 136,
+      "words": 8,
+      "type": "uint16",
+      "unit": ""
+    }
+  ],
+  "group_metadata_fields": [
+    {
+      "name": "status_bits_read_error_unsupported_timeTrusted",
+      "offset": 0,
+      "words": 1,
+      "type": "bits",
+      "unit": ""
+    },
+    {
+      "name": "failure_count_saturating",
+      "offset": 1,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "sequence",
+      "offset": 2,
+      "words": 2,
+      "type": "uint32",
+      "unit": ""
+    },
+    {
+      "name": "utc_ms",
+      "offset": 4,
+      "words": 4,
+      "type": "uint64",
+      "unit": ""
+    },
+    {
+      "name": "monotonic_age_ms",
+      "offset": 8,
+      "words": 2,
+      "type": "uint32",
+      "unit": ""
+    },
+    {
+      "name": "source_count",
+      "offset": 10,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "source_start",
+      "offset": 11,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    }
+  ],
+  "parameter_fields": [
+    {
+      "name": "HR0",
+      "offset": 0,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "HR130_132",
+      "offset": 1,
+      "words": 3,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "HR3300_3337",
+      "offset": 4,
+      "words": 38,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "snapshot_utc_ms",
+      "offset": 42,
+      "words": 4,
+      "type": "uint64",
+      "unit": ""
+    },
+    {
+      "name": "snapshot_valid",
+      "offset": 46,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    },
+    {
+      "name": "snapshot_error",
+      "offset": 47,
+      "words": 1,
+      "type": "uint16",
+      "unit": ""
+    }
+  ],
+  "max_per_south_port": 16,
+  "batch_measurement_fields": [
+    {
+      "name": "level",
+      "offset": 0,
+      "words": 2,
+      "type": "int32",
+      "unit": "0.1 mm"
+    },
+    {
+      "name": "average_temperature",
+      "offset": 2,
+      "words": 1,
+      "type": "int16",
+      "unit": "0.01 C"
+    }
+  ],
+  "batch_status_fields": [
+    {
+      "name": "current_density",
+      "offset": 0,
+      "words": 1,
+      "type": "uint16",
+      "unit": "0.0001 g/cm3"
+    },
+    {
+      "name": "quality",
+      "offset": 1,
+      "words": 1,
+      "type": "bits"
+    },
+    {
+      "name": "valid",
+      "offset": 2,
+      "words": 1,
+      "type": "bits"
+    }
+  ],
+  "control_fields": [
+    {
+      "name": "command",
+      "offset": 0,
+      "words": 1,
+      "type": "uint16",
+      "access": "RW",
+      "chinese": "动作指令，写非零合法编号立即受理，写0复位"
+    },
+    {
+      "name": "status",
+      "offset": 1,
+      "words": 1,
+      "type": "uint16",
+      "access": "R",
+      "chinese": "正常动作状态0～5"
+    },
+    {
+      "name": "error",
+      "offset": 2,
+      "words": 1,
+      "type": "uint16",
+      "access": "R",
+      "chinese": "正常动作错误码"
+    },
+    {
+      "name": "reserved",
+      "offset": 3,
+      "words": 1,
+      "type": "uint16",
+      "access": "R",
+      "chinese": "保留，返回0，不可写"
+    },
+    {
+      "name": "accepted_count",
+      "offset": 4,
+      "words": 2,
+      "type": "uint32",
+      "access": "R",
+      "chinese": "正常受理次数，饱和，仅诊断"
+    },
+    {
+      "name": "accepted_command",
+      "offset": 6,
+      "words": 1,
+      "type": "uint16",
+      "access": "R",
+      "chinese": "本周期已受理指令，仅诊断"
+    },
+    {
+      "name": "stop_request",
+      "offset": 7,
+      "words": 1,
+      "type": "uint16",
+      "access": "RW",
+      "chinese": "独立停止请求，1受理、0复位"
+    },
+    {
+      "name": "stop_status",
+      "offset": 8,
+      "words": 1,
+      "type": "uint16",
+      "access": "R",
+      "chinese": "独立停止状态0～5"
+    },
+    {
+      "name": "stop_error",
+      "offset": 9,
+      "words": 1,
+      "type": "uint16",
+      "access": "R",
+      "chinese": "独立停止错误码"
+    },
+    {
+      "name": "stop_accepted_count",
+      "offset": 10,
+      "words": 2,
+      "type": "uint32",
+      "access": "R",
+      "chinese": "停止受理次数，饱和，仅诊断"
+    }
+  ],
+  "commands": [
+    {
+      "value": 1,
+      "chinese": "测量Ⅰ",
+      "south_HR699": 1
+    },
+    {
+      "value": 2,
+      "chinese": "测量Ⅱ（界面）",
+      "south_HR699": 16
+    },
+    {
+      "value": 3,
+      "chinese": "测量Ⅲ（罐底）",
+      "south_HR699": 32
+    },
+    {
+      "value": 4,
+      "chinese": "停止",
+      "south_HR699": 4
+    },
+    {
+      "value": 5,
+      "chinese": "上升",
+      "south_HR699": 2
+    },
+    {
+      "value": 6,
+      "chinese": "下降",
+      "south_HR699": 256
+    },
+    {
+      "value": 7,
+      "chinese": "远程密度",
+      "south_HR699": 64
+    },
+    {
+      "value": 9,
+      "chinese": "重复性检查",
+      "south_HR699": 8
+    },
+    {
+      "value": 10,
+      "chinese": "液体震荡回避",
+      "south_HR699": 128
+    }
+  ],
+  "control_states": {
+    "idle": 0,
+    "accepted": 1,
+    "running": 2,
+    "readback_confirmed": 3,
+    "failed_or_canceled": 4,
+    "uncertain": 5
+  },
+  "control_errors": {
+    "none": 0,
+    "binding_changed_unsent": 1,
+    "legacy_not_remote_unsent": 2,
+    "legacy_instrument_fault_unsent": 3,
+    "auth_failed_unsent": 4,
+    "instrument_rejected": 5,
+    "write_unconfirmed": 6,
+    "readback_unconfirmed": 7,
+    "audit_state_unreliable": 8,
+    "interrupted": 9,
+    "conditions_revoked_unsent": 10,
+    "canceled_by_stop_unsent": 11,
+    "level_offset_out_of_range": 12,
+    "level_offset_readback_mismatch": 13,
+    "level_password_clear_unconfirmed": 14
+  },
+  "command_confirmation": "客户C01 2026-10-13，二进制001至111对应十进制1至7；9/10为FW扩展",
+  "revision": "V3.2-D2",
+  "gateway_commands": [
+    {
+      "value": 11,
+      "chinese": "远程液位修改",
+      "permission": 512,
+      "method": "FC06 HR129=EA66; FC10 HR503/504=new offset; FC06 HR129=0"
+    }
+  ]
+}

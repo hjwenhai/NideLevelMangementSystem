@@ -1,0 +1,8 @@
+.build-tools/
+.build-cache/
+.module-cache/
+output/
+data/
+*.log
+src/web/node_modules/
+private/

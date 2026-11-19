@@ -1,0 +1,9 @@
+{
+  "source": "local simulation, not production data",
+  "historical_run": "2026-10-29",
+  "preserved_on": "2026-10-30",
+  "database_sha256": "f512fbe318fbd3fef2581996db8c56911424ebae3fdbcc5b0ebb06772e00fa78",
+  "upgrade_events": 3,
+  "earlier_history_rows": 1,
+  "original_temporary_base": "E:\\Works\\耐得\\耐德东京计装\\液位管理系统_20260704\\设备采集网关\\tmp\\web-upgrade-9hupw3ld\\base"
+}

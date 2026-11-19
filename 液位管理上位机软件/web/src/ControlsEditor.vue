@@ -1,0 +1,9 @@
+<script setup lang="ts">
+import {operationAvailable} from './api';
+import {supportsIfxCommand} from './tankProtocol';
+import type {ControlSettings,InstrumentCommand} from './api';
+defineProps<{settings:ControlSettings;ifx:boolean;wireless:boolean;averageAllowed:boolean}>();
+const deliveryAverage=__AVERAGE_DELIVERY__;
+const names:Record<InstrumentCommand,string>={MeasureI:'测量Ⅰ',MeasureII:'测量Ⅱ（界面）',MeasureIII:'测量Ⅲ（罐底）',Stop:'停止',Hoist:'上升',Lower:'下降',Density:'远程密度',Repeatability:'重复性检查',OscillationAvoidance:'液体震荡回避',RemoteLevel:'远程液位修改'};
+</script>
+<template><section class="wide-field notice"><h3>本罐开放的仪表操作</h3><p class="help">只显示勾选的操作。操作员仍须核对储罐、设备状态并确认；模式回读确认不表示机械到位。</p><div class="bulk-tanks"><label v-for="(name,key) in Object.fromEntries(Object.entries(names).filter(([key])=>operationAvailable(key)))" :key="key" class="checkbox"><input v-model="settings.allowedCommands" type="checkbox" :value="key" :disabled="ifx && !supportsIfxCommand(key as InstrumentCommand)">{{name}}</label></div><p v-if="ifx" class="help">IFX30000 不支持远程液位修改、重复性检查和液体震荡回避。</p><p v-else class="help">远程液位修改默认关闭，支持直连RTU及新版GT6757X网关TCP/RTU；开放后仍需岗位的“远程液位修改（校准）”权限，执行时输入目标液位并填写原因。</p><label v-if="deliveryAverage&&wireless&&averageAllowed" class="checkbox"><input v-model="settings.wirelessMeasurementEnabled" type="checkbox">启用本罐无线浮子平均温度测量</label><p v-if="deliveryAverage&&wireless&&averageAllowed" class="help">单次操作与平均测温分别配置；任务内部按已确认流程执行。接口能力或现场验证条件不满足时不能启动。</p><details><summary>控制等待参数</summary><div class="config-fields"><label class="config-field">回读确认最长等待 秒<input v-model.number="settings.confirmationTimeoutSeconds" type="number" min="3" max="300" required></label><label v-if="deliveryAverage&&averageAllowed" class="config-field">测温移动最长等待 秒<input v-model.number="settings.movementTimeoutSeconds" type="number" min="30" max="3600" required></label></div><p class="help">回读确认默认30秒，可设3～300秒。IFX本次完成握手、标志收尾和模式回读共用此等待时间，旧标志清理单独计时。测温移动按移动距离另设。读取重试不用于重发动作。</p></details></section></template>

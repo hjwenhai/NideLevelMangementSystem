@@ -1,0 +1,13 @@
+.build-tools/
+.build-cache/
+node_modules/
+**/bin/
+**/obj/
+web/dist/
+data/
+output/
+TestResults/
+*.log
+*.db
+*.db-shm
+*.db-wal
