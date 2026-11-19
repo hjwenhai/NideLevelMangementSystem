@@ -4,6 +4,17 @@ $preview=Join-Path $project 'output\r24-preview_20261118'
 $identity=Get-Content -LiteralPath (Join-Path $preview 'preview-identity.json') -Raw -Encoding UTF8|ConvertFrom-Json
 $data=Join-Path $preview 'data'
 $server=Join-Path $project 'output\r24-feedback_20261118\payload\app\server'
+$legacyHostExe=Join-Path $server 'LevelManager.Host.exe'
+$releasePath=Join-Path $project 'output\客户安装向导_r24_20261118\release.json'
+if(Test-Path -LiteralPath $releasePath){
+ $release=Get-Content -LiteralPath $releasePath -Raw -Encoding UTF8 | ConvertFrom-Json
+ if($release.build -eq '20261118-r24' -and $release.payloadDirectory){
+  $publishedPayload=[IO.Path]::GetFullPath((Join-Path $project $release.payloadDirectory))
+  $outputPrefix=(Join-Path $project 'output')+[IO.Path]::DirectorySeparatorChar
+  if(!$publishedPayload.StartsWith($outputPrefix,[StringComparison]::OrdinalIgnoreCase)){throw 'r24发布目录必须位于本工程的output目录内。'}
+  $server=Join-Path $publishedPayload 'app\server'
+ }
+}
 $hostExe=Join-Path $server 'LevelManager.Host.exe'
 $clientExe=Join-Path $project 'output\r24-feedback_20261118\payload\app\client\LevelManager.Desktop.exe'
 $simulatorExe=Join-Path $project 'output\GT6757X本机模拟器_r22_20261107_V1.0.3\app\LevelManager.GatewaySimulator.exe'

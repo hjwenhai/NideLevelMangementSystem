@@ -1,4 +1,5 @@
 from pathlib import Path
+import argparse
 import hashlib
 import json
 import re
@@ -99,17 +100,20 @@ def language():
     (WIZARD / 'ChineseSimplified.isl').write_text(text, encoding='utf-8-sig')
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--payload-dir', type=Path, default=PAYLOAD)
+    payload = parser.parse_args().payload_dir.resolve()
     OUTPUT.mkdir(parents=True, exist_ok=True)
     QA.mkdir(parents=True, exist_ok=True)
-    manifest = json.loads((PAYLOAD/'package-manifest.json').read_text(encoding='utf-8-sig'))
+    manifest = json.loads((payload/'package-manifest.json').read_text(encoding='utf-8-sig'))
     assert manifest['build'] == '20261118-r24'
     for item in manifest['files']:
-        path = (PAYLOAD/item['path']).resolve()
-        assert path.is_relative_to(PAYLOAD.resolve()), item['path']
+        path = (payload/item['path']).resolve()
+        assert path.is_relative_to(payload), item['path']
         assert digest(path) == item['sha256'], item['path']
     branding()
     language()
-    result = subprocess.run([str(COMPILER), '/DPayloadRoot='+str(PAYLOAD), '/DOutputRoot='+str(OUTPUT), str(WIZARD/'LevelManager.iss')], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    result = subprocess.run([str(COMPILER), '/DPayloadRoot='+str(payload), '/DOutputRoot='+str(OUTPUT), str(WIZARD/'LevelManager.iss')], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     log = result.stdout.decode('utf-8', errors='replace')
     (QA/'release-build.log').write_text(log, encoding='utf-8')
     print(log[-6000:])

@@ -48,9 +48,9 @@ def build_installer(qa=False):
     assert result.returncode==0,result.stdout[-3000:]
     print(json.dumps(dict(installer=str(target/'液位管理系统_r24_安装程序_20261118.exe'),qa=qa)))
 
-def seal():
-    manifest=json.loads((P/'package-manifest.json').read_text(encoding='utf-8'))
-    for item in manifest['files']:assert sha(P/item['path'])==item['sha256'],item['path']
+def seal(payload=P):
+    manifest=json.loads((payload/'package-manifest.json').read_text(encoding='utf-8'))
+    for item in manifest['files']:assert sha(payload/item['path'])==item['sha256'],item['path']
     for item in json.loads((B/'protected-releases.json').read_text(encoding='utf-8')):assert sha(R/item['path']).lower()==item['sha256'],item['path']
     tests=ET.parse(B/'qa/r24.trx').getroot();ns={'t':'http://microsoft.com/schemas/VisualStudio/TeamTest/2010'};counts=tests.find('.//t:Counters',ns).attrib;assert counts['failed']=='0'
     integration=sorted((B/'qa').glob('integration-*/result.json'))[-1];ui=json.loads(integration.read_text(encoding='utf-8'));assert ui['passed']
@@ -77,6 +77,13 @@ def seal():
         assert tank_result['passed']
         release.update(lanTankGraphicFix=manifest['lanTankGraphicFix'],lanTankGraphicEvidence='../r24-lan-tank-graphic_20261119/result.json')
         release['validation'].update(lanTankGraphicChecks=len(tank_result['checks']),functionalBaselineReused=True)
+    if manifest.get('realtimeTrendMinutes') == 60:
+        evidence='../r24-realtime-hour_20261119/trend-ui/result.json'
+        trend_result=json.loads((O/evidence).read_text(encoding='utf-8-sig'));assert trend_result['passed'] and trend_result['instrumentWrites']==0
+        release.update(realtimeTrendMinutes=60,realtimeTrendEvidence=evidence)
+        release['validation'].update(realtimeTrendChecks=len(trend_result['checks']),functionalBaselineReused=True)
+    if payload != P:
+        release['payloadDirectory']=payload.relative_to(R).as_posix()
     reinstall_cases=[case for case in install['checks'] if case['name'].startswith('reinstall-')]
     if reinstall_cases:
         assert all(case['passed'] for case in reinstall_cases)
@@ -87,7 +94,11 @@ def seal():
     print(json.dumps(release,ensure_ascii=False))
 
 if __name__=='__main__':
-    parser=argparse.ArgumentParser();parser.add_argument('action',choices=['prepare','build','build-qa','seal']);action=parser.parse_args().action
+    parser=argparse.ArgumentParser();parser.add_argument('action',choices=['prepare','build','build-qa','seal'])
+    parser.add_argument('--payload-dir',type=Path)
+    args=parser.parse_args()
+    action=args.action
+    if args.payload_dir and action!='seal':parser.error('--payload-dir is supported with seal')
     if action=='prepare':prepare()
-    elif action=='seal':seal()
+    elif action=='seal':seal(args.payload_dir.resolve() if args.payload_dir else P)
     else:build_installer(action=='build-qa')

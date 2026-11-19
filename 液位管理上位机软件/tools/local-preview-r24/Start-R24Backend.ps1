@@ -10,7 +10,11 @@ try{
   if($existing.build -ne '20261118-r24'){throw "$url 正在运行其他版本，不会替换或结束。"}
   $savedSession=if(Test-Path -LiteralPath $sessionFile){Get-Content -LiteralPath $sessionFile -Raw -Encoding UTF8|ConvertFrom-Json}else{$null}
   $savedProcess=if($savedSession){Get-Process -Id $savedSession.hostPid -ErrorAction SilentlyContinue}else{$null}
-  if(!$savedSession -or $savedSession.url -ne ($url+'/') -or $savedSession.dataRoot -ne $data -or !$savedProcess -or $savedProcess.Path -ne $hostExe){throw '端口上已有r24，但不属于本入口记录的实例，未接管。'}
+  if(!$savedSession -or $savedSession.url -ne ($url+'/') -or $savedSession.dataRoot -ne $data -or !$savedProcess -or $savedProcess.Path -notin @($hostExe,$legacyHostExe)){throw '端口上已有r24，但不属于本入口记录的实例，未接管。'}
+  if($savedProcess.Path -ne $hostExe){
+   Write-Output '本机r24仍在使用上次启动的后台。结束现场作业并停止原后台后，再运行此入口可切换到最新后台。'
+   return
+  }
   Start-R24OptionalSimulator
   Write-Output ('r24后台已经运行：'+$url);return
  }

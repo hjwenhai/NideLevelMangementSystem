@@ -4,6 +4,10 @@ using Naide.LevelManager.Domain;
 namespace Naide.LevelManager.Host;
 public sealed class RealtimeTrends(TimeProvider clock)
 {
+    private const long WindowMilliseconds = 60 * 60 * 1000;
+    // At 500 ms per poll, one hour has 7200 readings. Leave room for gap markers.
+    private const int MaximumFramesPerTank = 8192;
+
     private sealed record Frame(long AtUtcMs,Measurement[] Values,bool Gap);
     private sealed class Buffer { public readonly Queue<Frame> Samples = new(); }
     private readonly ConcurrentDictionary<Guid, Buffer> buffers = new();
@@ -13,8 +17,8 @@ public sealed class RealtimeTrends(TimeProvider clock)
         lock (b)
         {
             b.Samples.Enqueue(new(reading.ReceivedAtUtc.ToUnixTimeMilliseconds(),Enum.GetValues<TrendQuantity>().Select(q=>TrendValues.Get(reading,q)).ToArray(),reading.Diagnostic=="REALTIME_GAP"));
-            var before = clock.GetUtcNow().AddMinutes(-30);
-            while (b.Samples.TryPeek(out var first) && (first.AtUtcMs < before.ToUnixTimeMilliseconds() || b.Samples.Count > 4096)) b.Samples.Dequeue();
+            var cutoff = clock.GetUtcNow().ToUnixTimeMilliseconds() + 1 - WindowMilliseconds;
+            while (b.Samples.TryPeek(out var first) && (first.AtUtcMs < cutoff || b.Samples.Count > MaximumFramesPerTank)) b.Samples.Dequeue();
         }
     }
     public void GapAll()
@@ -24,7 +28,11 @@ public sealed class RealtimeTrends(TimeProvider clock)
     }
     public TrendResult Query(TrendQuery query, int expirySeconds)
     {
-        TrendValues.Validate(query); var now = clock.GetUtcNow().ToUnixTimeMilliseconds(); List<TrendSeries> result = [];
+        TrendValues.Validate(query);
+        var now = clock.GetUtcNow().ToUnixTimeMilliseconds();
+        var end = now + 1; // The upper bound is exclusive. Include the current millisecond.
+        query = query with { StartUtcMs = end - WindowMilliseconds, EndUtcMs = end };
+        List<TrendSeries> result = [];
         foreach (var selection in query.Series)
         {
             Frame[] samples = [];
