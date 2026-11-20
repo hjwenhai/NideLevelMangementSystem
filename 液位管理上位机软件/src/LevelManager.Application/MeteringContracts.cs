@@ -12,11 +12,17 @@ public interface ICapacityTableStore
 }
 public sealed class MeteringService(ICapacityTableStore tables)
 {
+    private Task<CapacityTable?> Table(Guid? id, CancellationToken ct)
+        => id.HasValue ? tables.GetTableAsync(id.Value, ct: ct) : Task.FromResult<CapacityTable?>(null);
+
+    public async Task<Measurement> CalculateManualWaterVolumeAsync(MeteringSettings settings, CancellationToken ct)
+        => MeteringCalculator.CalculateManualWaterVolume(settings, await Table(settings.MainTableId, ct),
+            settings.BaseVolumeMethod == BaseVolumeMethod.MainPlusDecimal ? await Table(settings.DecimalTableId, ct) : null);
+
     public async Task<ReadingSnapshot> CalculateAsync(TankDefinition tank, ReadingSnapshot reading, CancellationToken ct)
     {
         var settings = tank.Metering;
-        async Task<CapacityTable?> Table(Guid? id) => id.HasValue ? await tables.GetTableAsync(id.Value, ct: ct) : null;
-        var main = await Table(settings.MainTableId); var pressure = await Table(settings.StaticPressureTableId); var small = await Table(settings.DecimalTableId);
+        var main = await Table(settings.MainTableId, ct); var pressure = await Table(settings.StaticPressureTableId, ct); var small = await Table(settings.DecimalTableId, ct);
         var result = MeteringCalculator.Calculate(settings, reading.LevelMm, reading.InstrumentDensityKgM3, main, pressure, small);
         var revision = 0L;
         if (settings.Enabled || tank.Pressure1.Enabled || tank.Pressure2.Enabled)

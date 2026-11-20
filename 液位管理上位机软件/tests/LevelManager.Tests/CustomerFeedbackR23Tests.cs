@@ -32,6 +32,20 @@ public sealed class CustomerFeedbackR23Tests
     }
     [Fact]public void OldWaterVolumeIsPreservedWhenWaterHeightWasNeverSet()
     {var main=MainTable();var r=MeteringCalculator.Calculate(new(){Enabled=true,WaterVolumeM3=12},Measurement.Good(5000),Measurement.Good(800),main,null,null);Assert.Equal(488,r.NetVolumeM3.Value);Assert.Equal(12,r.WaterVolumeM3.Value);}
+    [Theory]
+    [InlineData(ValueQuality.Missing, 1000, 100)]
+    [InlineData(ValueQuality.Expired, 1000, 100)]
+    [InlineData(ValueQuality.Offline, 0, 0)]
+    [InlineData(ValueQuality.Fault, 10001, null)]
+    public void ManualWaterVolumeUsesOnlyHeightAndCapacityWhenLiquidLevelIsUnavailable(
+        ValueQuality levelQuality, int waterHeightMm, int? expectedWaterVolume)
+    {
+        var settings = new MeteringSettings { Enabled = true, WaterHeightMm = waterHeightMm, StaticPressureTableId = Guid.NewGuid() };
+        var result = MeteringCalculator.Calculate(settings, new(null, levelQuality), Measurement.Missing("无密度"), MainTable(), null, null);
+        Assert.Equal((decimal?)expectedWaterVolume, result.WaterVolumeM3.Value);
+        Assert.Equal(levelQuality, result.NetVolumeM3.Quality);
+        Assert.Null(result.CurrentVolumeM3.Value); Assert.Null(result.MassT.Value);
+    }
     [Theory][InlineData(-1)][InlineData(5001)]public void WaterAboveSurfaceOrNegativeDoesNotProduceInventory(int h)
     {var r=MeteringCalculator.Calculate(new(){Enabled=true,WaterHeightMm=h},Measurement.Good(5000),Measurement.Good(800),MainTable(),null,null);Assert.False(r.NetVolumeM3.IsValid);Assert.Contains("水位",r.Notes.Single());}
     [Fact]public void WaterHeightRoundTripsConfigurationExcelWithLegacyVolumeRetained()

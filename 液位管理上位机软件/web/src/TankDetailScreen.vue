@@ -29,6 +29,7 @@ const points=computed(()=>Array.from({length:props.tank.atsPointCount},(_,i)=>({
 const normalPoints=computed(()=>props.valid?points.value.filter(p=>p.temperatureC.quality==='Good').length:0);
 const graphicPoints=computed(()=>props.tank.temperatureMode!=='Ats'?[]:points.value.map(p=>({index:p.index,heightMm:props.tank.atsHeightsMm[p.index-1]??null,quality:props.valid?p.temperatureC.quality:'Missing',value:props.valid?p.temperatureC.value:null})));
 function quality(m:Metric|undefined){return !props.valid?'无有效数据':m?.reason||qualityNames[m?.quality||'Missing']}
+const waterVolume=computed(()=>props.reading?.configurationRevision===props.config.revision?props.reading.waterVolumeM3:undefined);
 function date(t:string|null|undefined){return t?new Date(t).toLocaleString('zh-CN',{hour12:false}):'—'}
 function pressure(i:number){const p=props.tank[i===1?'pressure1':'pressure2'],m=props.reading?.[i===1?'pressure1KPa':'pressure2KPa'];if(!p.enabled)return '未配置';if(!props.valid||m?.quality!=='Good'||m.value===null)return '—';return (m.value/(p.unit==='MPa'?1000:p.unit==='Bar'?100:1)).toLocaleString('zh-CN',{minimumFractionDigits:3,maximumFractionDigits:3})}
 const pressureUnit=(i:number)=>{const u=props.tank[i===1?'pressure1':'pressure2'].unit;return u==='KPa'?'kPa':u==='MPa'?'MPa':'bar'};
@@ -42,7 +43,7 @@ const keyMetrics=computed(()=>[
 ]);
 const extraMetrics=computed(()=>[
  {label:'修正后当前体积',value:value(props.reading?.currentVolumeM3,'volume'),unit:unit('volume',props.config.display),note:'扣水前体积 · '+quality(props.reading?.currentVolumeM3)},
- {label:'水位',value:props.tank.metering.waterHeightMm==null?'未填写':props.tank.metering.waterHeightMm.toLocaleString('zh-CN',{maximumFractionDigits:1}),unit:'mm',note:props.tank.metering.waterHeightMm==null?'旧配置沿用人工水体积 '+props.tank.metering.waterVolumeM3+' m³':'人工水位 · 计算水体积 '+value(props.reading?.waterVolumeM3,'volume')+' '+unit('volume',props.config.display)},
+ {label:'水位',value:props.tank.metering.waterHeightMm==null?'未填写':props.tank.metering.waterHeightMm.toLocaleString('zh-CN',{maximumFractionDigits:1}),unit:'mm',note:props.tank.metering.waterHeightMm==null?'旧配置沿用人工水体积 '+props.tank.metering.waterVolumeM3+' m³':'人工水位 · 计算水体积 '+displayMetric(waterVolume.value,'volume',props.config.display)+' '+unit('volume',props.config.display)+(waterVolume.value?.reason?' · '+waterVolume.value.reason:'')},
  {label:'20℃标准密度',value:String(props.tank.metering.standardDensity20KgM3??'—'),unit:'kg/m³',note:'人工配置，独立于实测密度'},
  ...[1,2].filter(i=>props.tank[i===1?'pressure1':'pressure2'].enabled).map(i=>({label:'压力输入'+i,value:pressure(i),unit:pressureUnit(i),note:props.tank[i===1?'pressure1':'pressure2'].enabled?quality(props.reading?.[i===1?'pressure1KPa':'pressure2KPa']):'未配置压力输入'})),
  {label:'浮子实际位置 P',value:value(props.reading?.floatPositionMm,'level'),unit:unit('level',props.config.display),note:props.reading?.surfaceBasis||quality(props.reading?.floatPositionMm)}

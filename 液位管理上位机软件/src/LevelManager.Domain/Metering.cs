@@ -86,10 +86,30 @@ public static partial class CapacityRules
 
 public static class MeteringCalculator
 {
+    private static decimal BaseVolume(MeteringSettings settings, CapacityTable main, CapacityTable? small, decimal heightMm)
+        => settings.BaseVolumeMethod == BaseVolumeMethod.MainPlusDecimal
+            ? CapacityRules.WithDecimal(main, small, heightMm, settings.FractionalMillimetreRule)
+            : CapacityRules.Interpolate(main, heightMm);
+
+    public static Measurement CalculateManualWaterVolume(MeteringSettings settings, CapacityTable? main, CapacityTable? small)
+    {
+        if (!settings.Enabled) return new(null, ValueQuality.Unconfigured, "体积计算未启用");
+        if (settings.WaterHeightMm is not { } height) return new(null, ValueQuality.Unconfigured, "未填写人工水位");
+        if (height < 0) return new(null, ValueQuality.Fault, "水位不能小于0");
+        if (main is null || !main.Enabled || main.Kind != CapacityTableKind.Main)
+            return new(null, ValueQuality.Unconfigured, "未关联已启用主罐容表");
+        if (height == 0) return Measurement.Good(0);
+        try { return Measurement.Good(BaseVolume(settings, main, small, height)); }
+        catch (ArgumentOutOfRangeException) { return new(null, ValueQuality.Fault, "水位超出罐容表范围，不进行外推"); }
+        catch (InvalidOperationException e) { return new(null, ValueQuality.Unconfigured, e.Message.Replace("当前液位", "人工水位")); }
+    }
+
     public static MeteringResult Calculate(MeteringSettings settings, Measurement levelMm,
         Measurement densityKgM3, CapacityTable? main, CapacityTable? pressure, CapacityTable? small)
     {
-        MeteringResult Bad(ValueQuality quality, string reason) => new(new(null, quality, reason), new(null, quality, reason), new(null, quality, reason), null, null, [reason]);
+        var manualWater = CalculateManualWaterVolume(settings, main, small);
+        MeteringResult Bad(ValueQuality quality, string reason) => new(new(null, quality, reason), new(null, quality, reason), new(null, quality, reason), null, null, [reason])
+            { WaterVolumeM3 = manualWater };
         if (!settings.Enabled) return Bad(ValueQuality.Unconfigured, "体积计算未启用");
         if (!levelMm.IsValid) return Bad(levelMm.Quality, "液位无效，不能计算体积");
         if (main is null || !main.Enabled || main.Kind != CapacityTableKind.Main) return Bad(ValueQuality.Unconfigured, "未关联已启用主罐容表");
@@ -98,24 +118,21 @@ public static class MeteringCalculator
         if (pressure is not null && (!densityKgM3.IsValid || densityKgM3.Value <= 0)) return Bad(ValueQuality.Missing, "静压力修正缺少有效所选工况密度");
         try
         {
-            var baseVolume = settings.BaseVolumeMethod == BaseVolumeMethod.MainPlusDecimal
-                ? CapacityRules.WithDecimal(main, small, levelMm.Value!.Value, settings.FractionalMillimetreRule)
-                : CapacityRules.Interpolate(main, levelMm.Value!.Value);
+            var baseVolume = BaseVolume(settings, main, small, levelMm.Value!.Value);
             var correction = pressure is null ? 0 : CapacityRules.Interpolate(pressure, levelMm.Value.Value) * densityKgM3.Value!.Value / pressure.ReferenceDensityKgM3;
             var current = baseVolume + correction;
-            if(settings.WaterHeightMm is <0 || settings.WaterHeightMm>levelMm.Value) return Bad(ValueQuality.Fault,"水位不能小于0或高于当前液位");
-            var water = settings.WaterHeightMm is null ? settings.WaterVolumeM3 : settings.WaterHeightMm==0 ? 0 : settings.BaseVolumeMethod==BaseVolumeMethod.MainPlusDecimal
-                ? CapacityRules.WithDecimal(main,small,settings.WaterHeightMm.Value,settings.FractionalMillimetreRule)
-                : CapacityRules.Interpolate(main,settings.WaterHeightMm.Value);
-            var net = current - water;
+            if (settings.WaterHeightMm > levelMm.Value) return Bad(ValueQuality.Fault, "水位高于当前液位");
+            var water = settings.WaterHeightMm is null ? Measurement.Good(settings.WaterVolumeM3) : manualWater;
+            if (!water.IsValid) return Bad(water.Quality, water.Reason!);
+            var net = current - water.Value!.Value;
             List<string> notes = [];
             notes.Add(settings.WaterHeightMm is null?"沿用旧配置人工水体积；填写水位后改按罐容表自动计算":"水位为人工输入；水体积按基础罐容算法计算，不重复叠加整体静压力修正");
             notes.Add("计算密度来源：" + (settings.DensitySource == MeteringDensitySource.Manual ? "人工工况密度" : "仪表实测密度") + "；20℃标准密度独立保留。");
             if (settings.BaseVolumeMethod == BaseVolumeMethod.Interpolate && (small is not null || settings.DecimalTableId.HasValue)) notes.Add("主表插值模式：小数表未参与，避免重复叠加");
             if (settings.BaseVolumeMethod == BaseVolumeMethod.MainPlusDecimal) notes.Add("主表下节点＋分区厘米/毫米累计增量；不重复进行主表插值");
-            if (net < 0) return new(Measurement.Good(current), new(null, ValueQuality.Fault, "水体积超过当前体积"), new(null, ValueQuality.Fault, "净体积无效"), baseVolume, correction, ["水体积超过当前体积"]);
+            if (net < 0) return new(Measurement.Good(current), new(null, ValueQuality.Fault, "水体积超过当前体积"), new(null, ValueQuality.Fault, "净体积无效"), baseVolume, correction, ["水体积超过当前体积"]) { WaterVolumeM3 = manualWater };
             var mass = densityKgM3.IsValid && densityKgM3.Value > 0 ? Measurement.Good(net * densityKgM3.Value!.Value / 1000m) : Measurement.Missing("质量计算缺少有效所选工况密度");
-            return new(Measurement.Good(current), Measurement.Good(net), mass, baseVolume, correction, notes){WaterVolumeM3=Measurement.Good(water)};
+            return new(Measurement.Good(current), Measurement.Good(net), mass, baseVolume, correction, notes) { WaterVolumeM3 = water };
         }
         catch (ArgumentOutOfRangeException) { return Bad(ValueQuality.Fault, "液位超出罐容表范围，不进行外推"); }
         catch (InvalidOperationException e) { return Bad(ValueQuality.Unconfigured, e.Message); }

@@ -42,13 +42,25 @@ public sealed class AcquisitionService(IConfigurationStore configurations, IRegi
     public async Task<AcquisitionView> CurrentAsync(CancellationToken ct = default)
     {
         var config = await configurations.GetAsync(ct); var now = clock.GetUtcNow();
-        var rows = config.Tanks.Select(t =>
+        List<ReadingSnapshot> rows = new(config.Tanks.Count);
+        foreach (var t in config.Tanks)
         {
             var sample = readings.GetValueOrDefault(t.Id) ?? new ReadingSnapshot { TankId = t.Id, ConfigurationRevision = config.Revision };
             var channel = config.Channels.First(c => c.Id == t.ChannelId);
-            return wireless.Apply(sample.ForCurrentState(now, session, config.Revision, config.ReadingExpirySeconds,
-                running, t.Enabled && channel.Enabled, t.TemperatureMode),t,channel,false);
-        }).ToArray();
+            var current = sample.ForCurrentState(now, session, config.Revision, config.ReadingExpirySeconds,
+                running, t.Enabled && channel.Enabled, t.TemperatureMode);
+            if (t.Metering.WaterHeightMm.HasValue &&
+                (current.CalculationRevision == 0 || current.ConfigurationRevision != config.Revision || current.WaterVolumeM3 != sample.WaterVolumeM3))
+            {
+                try { current = current with { WaterVolumeM3 = await metering.CalculateManualWaterVolumeAsync(t.Metering, ct) }; }
+                catch (Exception error) when (error is not OperationCanceledException)
+                {
+                    logger.LogError(error, "人工水体积计算失败");
+                    current = current with { WaterVolumeM3 = new(null, ValueQuality.Fault, "水体积计算暂不可用") };
+                }
+            }
+            rows.Add(wireless.Apply(current,t,channel,false));
+        }
         return new(now, running, session, config.Revision, rows, channelStates.Values.OrderBy(c => c.Name).ToArray(), historyError);
     }
 

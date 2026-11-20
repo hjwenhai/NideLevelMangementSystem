@@ -58,6 +58,14 @@ public class DeviceReaderTests
         Assert.Equal(ValueQuality.Fault, result.LevelMm.Quality);
         Assert.Null(result.LevelMm.Value); Assert.False(result.FreshPositionReadConfirmed);
     }
+    [Fact] public async Task DirectInternalFaultDoesNotMaskEitherAnalogInput()
+    {
+        var raw = new ushort[31]; raw[27] = 12000; raw[28] = 16000;
+        await using var client = new RegisterFixture((_, start, _) => start == 0 ? raw : [8510, 1, 0x8000]);
+        var result = await new DeviceReader(AcquisitionProtocol.DirectRtu).ReadAsync(client, Binding(AcquisitionProtocol.DirectRtu), default);
+        Assert.Equal(12, result.Analog1Ma.Value);
+        Assert.Equal(16, result.Analog2Ma.Value);
+    }
     [Fact] public async Task NoThermometerMasksTemperaturesEvenIfRegistersContainZero()
     {
         await using var client = new RegisterFixture((_, start, _) => start == 0 ? new ushort[31] : [0, 1, 0]);
@@ -193,6 +201,24 @@ public class DeviceReaderTests
         Assert.Equal((ushort)0x8000, result.InstrumentFault);
         Assert.Equal(1000, result.LevelMm.Value);
         Assert.Null(result.InstrumentDensityKgM3.Value); Assert.Equal(ValueQuality.Expired, result.InstrumentDensityKgM3.Quality);
+    }
+    [Theory]
+    [InlineData(AcquisitionProtocol.GatewayTcp)]
+    [InlineData(AcquisitionProtocol.GatewayRtu)]
+    public async Task GatewayInternalFaultPreservesValidAnalogInputButDoesNotRenewMissingChannel(AcquisitionProtocol protocol)
+    {
+        var (h, s, d) = GatewayWords(); s[10] = 0x8000; d[27] = 12000; d[28] = 16000;
+        var binding = Binding(protocol);
+        binding = binding with { Tank = binding.Tank with { Pressure1 = new() { Enabled = true }, Pressure2 = new() { Enabled = true } } };
+        await using var client = GatewayClient(h, s, d);
+        var reader = new DeviceReader(protocol);
+        var valid = await reader.ReadAsync(client, binding, default);
+        Assert.Equal(12, valid.Analog1Ma.Value); Assert.Equal(16, valid.Analog2Ma.Value);
+
+        d[59] &= 0xfff7; // Missing IR28 only.
+        var missing = await reader.ReadAsync(client, binding, default);
+        Assert.Equal(12, missing.Analog1Ma.Value); Assert.Null(missing.Analog2Ma.Value);
+        Assert.Equal(ValueQuality.Expired, missing.Analog2Ma.Quality);
     }
     [Fact] public async Task GatewayReadErrorIsNotRenewedAsValidCachedLevel()
     {

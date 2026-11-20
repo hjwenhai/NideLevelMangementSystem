@@ -26,7 +26,7 @@ public class WirelessWorkflowTests
         public string? UnsupportedReason {get;set;}
         public bool RemoteFlag=false;
         public int Authorizations,TemperatureReads,Stops;public bool FailRestore,FailTemperatureOnce,PositionFaultAfterReading,Oscillate,FailStop;
-        public decimal Surface=5000,Position=5000;public ushort Mode=1;public int Point=-1;private double lastStop;
+        public decimal Surface=5000,Position=5000;public ushort Mode=1;public ushort FaultCode;public int Point=-1;private double lastStop;
         public Queue<ushort> Temperatures=new([5000,0,0x8000,3000]);public List<InstrumentCommand> Commands=[];
         public Task AuthorizeOnceAsync(WirelessTaskRecord task,CancellationToken ct){Assert.Equal(WirelessStage.Authorizing,journal.Records.Last().Stage);Authorizations++;return Task.CompletedTask;}
         public Task CommandAsync(WirelessTaskRecord task,InstrumentCommand c,CancellationToken ct)
@@ -37,7 +37,7 @@ public class WirelessWorkflowTests
             if(c==InstrumentCommand.MeasureI){if(FailRestore&&Point>=0)throw new IOException("恢复失败");Position=Surface;}
             return Task.CompletedTask;
         }
-        public Task<ReadingSnapshot> ReadPositionAsync(CancellationToken ct)=>Task.FromResult(new ReadingSnapshot{LevelMm=PositionFaultAfterReading&&TemperatureReads>=2?Measurement.Missing("位置失效"):Measurement.Good(Oscillate?((int)time.Seconds%2)*20+Position:Position),ReceivedAtUtc=time.UtcNow,InstrumentFault=0,InstrumentStatus=(ushort)((RemoteFlag?0x8000:0)|Mode),FreshPositionReadConfirmed=true});
+        public Task<ReadingSnapshot> ReadPositionAsync(CancellationToken ct)=>Task.FromResult(new ReadingSnapshot{LevelMm=PositionFaultAfterReading&&TemperatureReads>=2?Measurement.Missing("位置失效"):Measurement.Good(Oscillate?((int)time.Seconds%2)*20+Position:Position),ReceivedAtUtc=time.UtcNow,InstrumentFault=FaultCode,InstrumentStatus=(ushort)((RemoteFlag?0x8000:0)|Mode),FreshPositionReadConfirmed=true});
         public Task<WirelessTemperatureSample> ReadTemperatureOnceAsync(CancellationToken ct)
         {
             TemperatureReads++;if(Point<0)Assert.True(time.Seconds>=620);else Assert.True(time.Seconds-lastStop>=602);
@@ -45,9 +45,9 @@ public class WirelessWorkflowTests
         }
     }
     private static WirelessTaskRecord Record(int n=3)=>new(){Target=new(new(){Protocol=AcquisitionProtocol.DirectRtu},new(){TemperatureMode=TemperatureMode.Wireless},0,Guid.NewGuid(),null,null),ActorId="test",ActorName="隔离模拟",CreatedAtUtc=DateTimeOffset.UnixEpoch,RequestedPoints=n};
-    [Theory][InlineData(false)][InlineData(true)]public async Task CompleteFlowUsesOneAuthorizationRealDwellsZeroAndMissingRulesAndRestores(bool remote)
+    [Theory][InlineData(false,0)][InlineData(true,0)][InlineData(true,0x8000)]public async Task CompleteFlowUsesOneAuthorizationRealDwellsZeroAndMissingRulesAndRestores(bool remote,int faultCode)
     {
-        var t=new TestTime();var j=new Journal();var d=new Device(t,j){RemoteFlag=remote};var r=await new WirelessWorkflow(j,t).RunAsync(Record(),d,default);
+        var t=new TestTime();var j=new Journal();var d=new Device(t,j){RemoteFlag=remote,FaultCode=(ushort)faultCode};var r=await new WirelessWorkflow(j,t).RunAsync(Record(),d,default);
         Assert.Equal(WirelessStage.Completed,r.Stage);Assert.True(r.HasSuccessfulResult);Assert.Equal(1,d.Authorizations);Assert.Equal(3,d.Stops);Assert.Equal(4,d.TemperatureReads);Assert.Equal(3,r.Plan!.PlannedPoints);Assert.Equal(2,r.ValidPoints);Assert.Equal(15m,r.AverageTemperature.Value);Assert.Equal(50m,r.BaselineTemperature.Value);Assert.Equal(0m,r.Points[0].Temperature.Value);Assert.Equal(1,r.Points[1].Attempts);Assert.Equal((ushort)0x8000,r.Points[1].RawTemperature);Assert.All(r.Points,p=>Assert.True(p.DwellElapsedSeconds>=600));Assert.Equal(InstrumentCommand.MeasureI,d.Commands.Last());Assert.True(t.Seconds>=2426);
     }
     [Fact]public async Task ReadFailureRetriesOnlyTheReadWithoutRepeatingMotion()

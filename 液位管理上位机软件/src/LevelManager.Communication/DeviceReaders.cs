@@ -29,11 +29,6 @@ public sealed class DeviceReader(AcquisitionProtocol protocol, TimeProvider? tim
         if ((fault & 0x0060) != 0) result = result with { InstantTemperatureC = Fault("温度计断线或超量程") };
         if ((fault & 0x0800) != 0 && result.InstrumentDensityKgM3.IsValid)
             result = result with { InstrumentDensityKgM3 = Fault("密度测量异常") };
-        if ((fault & 0x8000) != 0) return result with
-        {
-            Analog1Ma = Fault("仪表内部错误"),
-            Analog2Ma = Fault("仪表内部错误")
-        };
         return result;
     }
     private ReadingSnapshot Initial(DeviceBinding b) => new()
@@ -198,7 +193,6 @@ public sealed class DeviceReader(AcquisitionProtocol protocol, TimeProvider? tim
                 {
                     if((q&16)!=0)return Unconfigured("槽位未安装或停用");
                     if((q&3)!=3)return new(null,ValueQuality.Offline,"网关现场离线");
-                    if(((result.InstrumentFault??0)&0x8000)!=0)return Fault("仪表内部错误");
                     if((raw[at]&4)!=0)return Unconfigured("网关模拟量组未启用");
                     if((raw[at]&2)!=0)return Fault("网关模拟量组读取失败");
                     if(!good||(raw[58+address/16]&(1<<(15-address%16)))==0)return new(null,ValueQuality.Expired,"网关模拟量未确认有效或过期");
