@@ -26,12 +26,15 @@ public sealed class DeviceReader(AcquisitionProtocol protocol, TimeProvider? tim
     private static ReadingSnapshot ApplyFwFaults(ReadingSnapshot result)
     {
         var fault = result.InstrumentFault ?? 0;
-        var level = result.LevelMm; var temperature = result.InstantTemperatureC; var density = result.InstrumentDensityKgM3;
-        if ((fault & 0x8000) != 0) return result with { LevelMm = Fault("仪表内部错误"), InstantTemperatureC = Fault("仪表内部错误"), InstrumentDensityKgM3 = Fault("仪表内部错误"), Analog1Ma = Fault("仪表内部错误"), Analog2Ma = Fault("仪表内部错误"), FreshPositionReadConfirmed = false };
-        if ((fault & 0x2000) != 0) level = Fault("编码器错误");
-        if ((fault & 0x0060) != 0) temperature = Fault("温度计断线或超量程");
-        if ((fault & 0x0800) != 0) density = Fault("密度测量异常");
-        return result with { LevelMm = level, InstantTemperatureC = temperature, InstrumentDensityKgM3 = density, FreshPositionReadConfirmed = result.FreshPositionReadConfirmed && level.IsValid };
+        if ((fault & 0x0060) != 0) result = result with { InstantTemperatureC = Fault("温度计断线或超量程") };
+        if ((fault & 0x8000) != 0) return result with
+        {
+            InstrumentDensityKgM3 = Fault("仪表内部错误"),
+            Analog1Ma = Fault("仪表内部错误"),
+            Analog2Ma = Fault("仪表内部错误")
+        };
+        if ((fault & 0x0800) != 0) result = result with { InstrumentDensityKgM3 = Fault("密度测量异常") };
+        return result;
     }
     private ReadingSnapshot Initial(DeviceBinding b) => new()
     {
@@ -86,9 +89,11 @@ public sealed class DeviceReader(AcquisitionProtocol protocol, TimeProvider? tim
             InstrumentStatus = densityStatus[1], InstrumentFault = densityStatus[2]
         };
         if (!controlRead) result = ApplyFwFaults(result);
-        if (result.InstrumentFault is { } error && (error & 0x8000) != 0)
-            result = result with { AtsPoints = result.AtsPoints.Select(p => p with { TemperatureC = Fault("仪表内部错误") }).ToArray(), AverageTemperatureC = Fault("仪表内部错误") };
-        return result with { Diagnostic = string.Join("；", failures) };
+        return result with
+        {
+            Diagnostic = string.Join("；", failures),
+            FreshPositionReadConfirmed = result.FreshPositionReadConfirmed && result.LevelMm.IsValid
+        };
     }
     private async Task<ReadingSnapshot> Ifx(IReadOnlyRegisterClient client, DeviceBinding b, CancellationToken ct)
     {
@@ -107,15 +112,19 @@ public sealed class DeviceReader(AcquisitionProtocol protocol, TimeProvider? tim
                 pointsRaw is null ? Measurement.Missing("多点温度未读到") : ((pointsRaw[16 + i / 4] >> ((i % 4) * 4)) & 6) != 0 ? Fault("测点断线或短路") : Temperature(pointsRaw[i]))).ToArray();
             result = result with { AtsPoints = points, AverageTemperatureC = Mean(points) };
         }
-        if (errors is null || (errors[1] & 15) != 0 || (!controlRead && (errors[0] & 0x1000) != 0))
+        if (errors is null || (errors[1] & 15) != 0)
         {
-            var reason = errors is null ? "未确认IFX现场通讯状态，缓存数值无效" : (errors[1] & 15) != 0 ? "IFX现场通讯错误" : "IFX仪表内部错误";
-            var quality = errors is not null && (errors[1] & 15) != 0 ? ValueQuality.Offline : ValueQuality.Fault;
+            var reason = errors is null ? "未确认IFX现场通讯状态，缓存数值无效" : "IFX现场通讯错误";
+            var quality = errors is null ? ValueQuality.Fault : ValueQuality.Offline;
             var bad = new Measurement(null, quality, reason);
             result = result with { LevelMm = bad, InstantTemperatureC = bad, InstrumentDensityKgM3 = bad, AverageTemperatureC = bad, AtsPoints = result.AtsPoints.Select(p => p with { TemperatureC = bad }).ToArray(), Diagnostic = reason,
-                InstrumentStatus = errors is null || (errors[1] & 15) != 0 ? null : result.InstrumentStatus };
+                InstrumentStatus = null };
         }
-        else if ((errors[0] & 0x0802) != 0) result = result with { InstantTemperatureC = Fault("IFX温度计未连接或超量程") };
+        else
+        {
+            if ((errors[0] & 0x0802) != 0) result = result with { InstantTemperatureC = Fault("IFX温度计未连接或超量程") };
+            if (!controlRead && (errors[0] & 0x1000) != 0) result = result with { InstrumentDensityKgM3 = Fault("IFX仪表内部错误") };
+        }
         // L25 does not expose a source update counter in this table. A cache read is
         // usable for monitoring with field status, but is not proof of a new position sample.
         return result with { InstrumentFault = errors?[0], Diagnostic = result.Diagnostic + string.Join("；", failures), FreshPositionReadConfirmed = false };
@@ -182,7 +191,7 @@ public sealed class DeviceReader(AcquisitionProtocol protocol, TimeProvider? tim
                 var group = 64 + 3 * 12;
                 var groupValid = (raw[group] & 7) == 1 && U32(raw, group + 8) <= b.ExpirySeconds * 1000L;
                 bool Known(int address) => (raw[58 + address / 16] & (1 << (15 - address % 16))) != 0;
-                points = points.Select(p => p with { TemperatureC = !groupValid || !Known(p.Index + 5) || !G(1, 1, () => Measurement.Good(0)).IsValid || !Known(23) || !Known(24) || !Known(25) || ((result.InstrumentFault ?? 0) & 0x8000) != 0 ? Measurement.Missing("ATS数据组未确认有效或过期") : p.TemperatureC }).ToArray();
+                points = points.Select(p => p with { TemperatureC = !groupValid || !Known(p.Index + 5) || !G(1, 1, () => Measurement.Good(0)).IsValid || !Known(23) || !Known(24) || !Known(25) ? Measurement.Missing("ATS数据组未确认有效或过期") : p.TemperatureC }).ToArray();
                 if (!result.LevelMm.IsValid && (q & 3) != 3) points = points.Select(p => p with { TemperatureC = new(null, ValueQuality.Offline, "网关现场离线") }).ToArray();
                 result = result with { AtsPoints = points, AverageTemperatureC = Mean(points) };
             }
