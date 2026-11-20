@@ -30,11 +30,14 @@ public class DeviceReaderTests
         Assert.Equal(851, result.InstrumentDensityKgM3.Value); Assert.True(result.FreshPositionReadConfirmed);
     }
     [Theory]
-    [InlineData(0x8000, 2700, 27)]
-    [InlineData(0x2000, 2700, 27)]
-    [InlineData(0x8060, 2700, null)]
-    [InlineData(0x8000, 0x8000, null)]
-    public async Task DirectLevelAndTemperaturesUseTheirOwnValidityWithInstrumentFault(int fault, int temperatureWord, int? expectedTemperature)
+    [InlineData(0x8000, 2700, 27, 851)]
+    [InlineData(0x2000, 2700, 27, 851)]
+    [InlineData(0x8060, 2700, null, 851)]
+    [InlineData(0x8000, 0x8000, null, 851)]
+    [InlineData(0x0800, 2700, 27, null)]
+    [InlineData(0x8800, 2700, 27, null)]
+    public async Task DirectReadingsUseTheirOwnValidityWithInstrumentFault(
+        int fault, int temperatureWord, int? expectedTemperature, int? expectedDensity)
     {
         var raw = new ushort[31]; raw[1] = 100; raw[26] = (ushort)temperatureWord;
         raw[6] = 2500; raw[23] = 1;
@@ -44,6 +47,8 @@ public class DeviceReaderTests
         Assert.Equal(10, result.LevelMm.Value); Assert.True(result.FreshPositionReadConfirmed);
         Assert.Equal((decimal?)expectedTemperature, result.InstantTemperatureC.Value);
         Assert.Equal(25, result.AverageTemperatureC.Value);
+        Assert.Equal((decimal?)expectedDensity, result.InstrumentDensityKgM3.Value);
+        if (expectedDensity is null) Assert.Equal("密度测量异常", result.InstrumentDensityKgM3.Reason);
     }
     [Fact] public async Task DirectOutOfRangeLevelStillHasNoValue()
     {
@@ -77,11 +82,11 @@ public class DeviceReaderTests
         Assert.Null(result.LevelMm.Value); Assert.Null(result.InstrumentDensityKgM3.Value); Assert.Contains("缓存", result.Diagnostic);
     }
     [Theory]
-    [InlineData(0x1000, 0, 1000, 25, 24)]
-    [InlineData(0x1802, 0, 1000, null, 24)]
-    [InlineData(0x1000, 3, null, null, null)]
-    public async Task IfxGaugeFaultDoesNotInvalidateLevelOrAtsButCommunicationFailureDoes(
-        int fault, int communicationError, int? level, int? temperature, int? averageTemperature)
+    [InlineData(0x1000, 0, 1000, 25, 24, 851)]
+    [InlineData(0x1802, 0, 1000, null, 24, 851)]
+    [InlineData(0x1000, 3, null, null, null, null)]
+    public async Task IfxReadingsUseTheirOwnValidityWithInstrumentFault(
+        int fault, int communicationError, int? level, int? temperature, int? averageTemperature, int? density)
     {
         var points = new ushort[20]; points[0] = 2400; points[1] = 0x8000; points[2] = 0x8000;
         await using var client = new RegisterFixture((_, start, _) => start switch
@@ -94,15 +99,16 @@ public class DeviceReaderTests
         Assert.Equal((decimal?)level, result.LevelMm.Value);
         Assert.Equal((decimal?)temperature, result.InstantTemperatureC.Value);
         Assert.Equal((decimal?)averageTemperature, result.AverageTemperatureC.Value);
+        Assert.Equal((decimal?)density, result.InstrumentDensityKgM3.Value);
         Assert.False(result.FreshPositionReadConfirmed);
     }
     [Fact] public async Task IfxPointNibbleErrorsAndDensitySentinelRemainDistinct()
     {
         var points = new ushort[20]; points[0] = 0; points[1] = 1000; points[2] = 2000; points[16] = 0x40;
-        await using var client = new RegisterFixture((_, start, _) => start switch { 0 => [0, 10000, 2500, 1], 12 => [0, 0], 8 => [0x8000], 500 => points, _ => throw new InvalidDataException() });
+        await using var client = new RegisterFixture((_, start, _) => start switch { 0 => [0, 10000, 2500, 1], 12 => [0x1000, 0], 8 => [0x8000], 500 => points, _ => throw new InvalidDataException() });
         var result = await new DeviceReader(AcquisitionProtocol.IfxL25).ReadAsync(client, Binding(AcquisitionProtocol.IfxL25), default);
         Assert.Equal(10, result.AverageTemperatureC.Value); Assert.Equal(ValueQuality.Fault, result.AtsPoints[1].TemperatureC.Quality);
-        Assert.Null(result.InstrumentDensityKgM3.Value);
+        Assert.Null(result.InstrumentDensityKgM3.Value); Assert.Equal(ValueQuality.Missing, result.InstrumentDensityKgM3.Quality);
     }
     private static (ushort[] Header, ushort[] Summary, ushort[] Detail) GatewayWords()
     {
@@ -160,11 +166,14 @@ public class DeviceReaderTests
         Assert.Equal(10, result.AverageTemperatureC.Value); Assert.Null(result.InstantTemperatureC.Value);
     }
     [Theory]
-    [InlineData(AcquisitionProtocol.GatewayTcp, 0x8000, 27)]
-    [InlineData(AcquisitionProtocol.GatewayRtu, 0x8000, 27)]
-    [InlineData(AcquisitionProtocol.GatewayTcp, 0x8060, null)]
-    [InlineData(AcquisitionProtocol.GatewayRtu, 0x2000, 27)]
-    public async Task GatewayReportedFaultPreservesIndependentlyValidLevelAndAts(AcquisitionProtocol protocol, int fault, int? expectedTemperature)
+    [InlineData(AcquisitionProtocol.GatewayTcp, 0x8000, 27, 851)]
+    [InlineData(AcquisitionProtocol.GatewayRtu, 0x8000, 27, 851)]
+    [InlineData(AcquisitionProtocol.GatewayTcp, 0x8060, null, 851)]
+    [InlineData(AcquisitionProtocol.GatewayRtu, 0x2000, 27, 851)]
+    [InlineData(AcquisitionProtocol.GatewayTcp, 0x8800, 27, null)]
+    [InlineData(AcquisitionProtocol.GatewayRtu, 0x0800, 27, null)]
+    public async Task GatewayReadingsUseTheirOwnValidityWithInstrumentFault(
+        AcquisitionProtocol protocol, int fault, int? expectedTemperature, int? expectedDensity)
     {
         var (h, s, d) = GatewayWords(); s[10] = (ushort)fault;
         await using var client = GatewayClient(h, s, d);
@@ -173,6 +182,17 @@ public class DeviceReaderTests
         Assert.Equal(1000, result.LevelMm.Value); Assert.True(result.FreshPositionReadConfirmed);
         Assert.Equal((decimal?)expectedTemperature, result.InstantTemperatureC.Value);
         Assert.Equal(10, result.AverageTemperatureC.Value);
+        Assert.Equal((decimal?)expectedDensity, result.InstrumentDensityKgM3.Value);
+        if (expectedDensity is null) Assert.Equal("密度测量异常", result.InstrumentDensityKgM3.Reason);
+    }
+    [Fact] public async Task GatewayDensityRequiresItsOwnValidityBit()
+    {
+        var (h, s, d) = GatewayWords(); s[1] &= 0xfffb; s[10] = 0x8000;
+        await using var client = GatewayClient(h, s, d);
+        var result = await new DeviceReader(AcquisitionProtocol.GatewayTcp).ReadAsync(client, Binding(AcquisitionProtocol.GatewayTcp), default);
+        Assert.Equal((ushort)0x8000, result.InstrumentFault);
+        Assert.Equal(1000, result.LevelMm.Value);
+        Assert.Null(result.InstrumentDensityKgM3.Value); Assert.Equal(ValueQuality.Expired, result.InstrumentDensityKgM3.Quality);
     }
     [Fact] public async Task GatewayReadErrorIsNotRenewedAsValidCachedLevel()
     {

@@ -27,13 +27,13 @@ public sealed class DeviceReader(AcquisitionProtocol protocol, TimeProvider? tim
     {
         var fault = result.InstrumentFault ?? 0;
         if ((fault & 0x0060) != 0) result = result with { InstantTemperatureC = Fault("温度计断线或超量程") };
+        if ((fault & 0x0800) != 0 && result.InstrumentDensityKgM3.IsValid)
+            result = result with { InstrumentDensityKgM3 = Fault("密度测量异常") };
         if ((fault & 0x8000) != 0) return result with
         {
-            InstrumentDensityKgM3 = Fault("仪表内部错误"),
             Analog1Ma = Fault("仪表内部错误"),
             Analog2Ma = Fault("仪表内部错误")
         };
-        if ((fault & 0x0800) != 0) result = result with { InstrumentDensityKgM3 = Fault("密度测量异常") };
         return result;
     }
     private ReadingSnapshot Initial(DeviceBinding b) => new()
@@ -120,11 +120,7 @@ public sealed class DeviceReader(AcquisitionProtocol protocol, TimeProvider? tim
             result = result with { LevelMm = bad, InstantTemperatureC = bad, InstrumentDensityKgM3 = bad, AverageTemperatureC = bad, AtsPoints = result.AtsPoints.Select(p => p with { TemperatureC = bad }).ToArray(), Diagnostic = reason,
                 InstrumentStatus = null };
         }
-        else
-        {
-            if ((errors[0] & 0x0802) != 0) result = result with { InstantTemperatureC = Fault("IFX温度计未连接或超量程") };
-            if (!controlRead && (errors[0] & 0x1000) != 0) result = result with { InstrumentDensityKgM3 = Fault("IFX仪表内部错误") };
-        }
+        else if ((errors[0] & 0x0802) != 0) result = result with { InstantTemperatureC = Fault("IFX温度计未连接或超量程") };
         // L25 does not expose a source update counter in this table. A cache read is
         // usable for monitoring with field status, but is not proof of a new position sample.
         return result with { InstrumentFault = errors?[0], Diagnostic = result.Diagnostic + string.Join("；", failures), FreshPositionReadConfirmed = false };
